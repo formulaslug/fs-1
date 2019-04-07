@@ -69,6 +69,8 @@ int main() {
 			fsmEventQueue);
 	AdcChSubsys adcChSubsys = AdcChSubsys(fsmEventQueue);
 	DigInChSubsys digInChSubsys = DigInChSubsys(fsmEventQueue);
+	TimerChSubsys timerChSubsys = TimerChSubsys(fsmEventQueue);
+	
 	
 
 	/*
@@ -82,6 +84,8 @@ int main() {
 			adcThreadFunc, &adcChSubsys);
 	chThdCreateStatic(digInThreadFuncWa, sizeof(digInThreadFuncWa), NORMALPRIO,
 			digInThreadFunc, &digInChSubsys);
+	chThdCreateStatic(timerThreadFuncWa, sizeof(timerThreadFuncWa), NORMALPRIO,
+			timerThreadFunc, &timerChSubsys);
 
 	AnalogFilter throttleFilter = AnalogFilter();
 
