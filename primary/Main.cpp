@@ -9,6 +9,7 @@
 #include "CanOpenPdo.h"
 #include "DigInChSubsys.h"
 #include "EventQueue.h"
+#include "timerChSubsys.h"
 #include "Vehicle.h"
 #include "ch.hpp"
 #include "hal.h"
@@ -38,6 +39,14 @@ static THD_FUNCTION(digInThreadFunc, digInChSubsys) {
 	chRegSetThreadName("Digital In");
 	static_cast<DigInChSubsys*>(digInChSubsys)->runThread();
 }
+
+static THD_WORKING_AREA(timerThreadFuncWa, 128);
+static THD_FUNCTION(timerThreadFunc, timerChSubsys) {
+	chRegSetThreadName("Timers");
+	static_cast<TimerChSubsys*>(timerChSubsys)->runThread();
+}
+
+
 
 int main() {
 
@@ -200,7 +209,7 @@ int main() {
 				
 			}
 		}
-		vehicle.FSM();
+		vehicle.FSM(); //update vehicle state
 		// TODO: use condition var to signal that events are present in the queue
 		chThdSleepMilliseconds(1); // must be fast enough to deplete event queue quickly enough
 	}

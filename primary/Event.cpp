@@ -24,6 +24,9 @@ Event::Event(Type t, DigitalInput pin, bool currentState) : m_type(t) {
   m_params[0] = static_cast<uint16_t>(pin);
   m_params[1] = static_cast<uint16_t>(currentState);
 }
+Event::Event(Type t, uint8_t timerNum) : m_type(t) {
+	m_params[0] = timerNum;
+}
 
 Event::Type Event::type() { return m_type; }
 
