@@ -1,0 +1,21 @@
+cppHeaderFileInclude {
+  \.h$
+  \.hpp$
+  \.inc$
+}
+
+cppSrcFileInclude {
+  \.cpp$
+}
+
+modifiableFileExclude {
+  ChibiOS/
+  build/
+  StdLib\.cpp$
+  StdLib\.h$
+  chconf\.h$
+  halconf\.h$
+  mcuconfFs\.h$
+  mcuconf\.h$
+  mcuconf-f3\.h$
+}
