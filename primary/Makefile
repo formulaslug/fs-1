@@ -86,7 +86,7 @@ endif
 PROJECT = fs-1-primary
 
 # Imported source files and paths
-CHIBIOS := ChibiOS
+CHIBIOS := ../ChibiOS
 CONFDIR := ./cfg
 
 # Startup files.
