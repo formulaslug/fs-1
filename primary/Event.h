@@ -6,7 +6,6 @@
 
 #include <array>
 #include <vector>
-
 #include "Gpio.h"
 
 class Event {

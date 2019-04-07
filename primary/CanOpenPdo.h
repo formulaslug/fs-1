@@ -6,6 +6,7 @@
 
 #include "ch.h"
 #include "hal.h"
+#include "Gpio.h"
 
 // COB-IDs: MAX LENGTH of 12 bits, only the LSB 12 should be used
 // IDs specified in format 0x<system-id><node-id><function-id>
@@ -36,32 +37,33 @@
 // Ex/ ECU Throttle Packet
 //    0 0 1 0        0 0 0 0 0 1 0      0
 
-// System IDs
-constexpr uint32_t kSysIdMask = 0x00f;
-constexpr uint32_t kSysIdFs = 0x004;  // 0b1000
-// Node IDs
-constexpr uint32_t kNodeIdMask = 0x0f0;
-constexpr uint32_t kNodeIdPrimary = 0x000;
-constexpr uint32_t kNodeIdSecondary = 0x020;
-constexpr uint32_t kNodeIdCellTemp = 0x030;
+
 // Function IDs
-constexpr uint32_t kFuncIdMask = 0x00f;
-constexpr uint32_t kFuncIdHeartbeat = 0x100;
+
 constexpr uint32_t kFuncIdCellTempAdc[4] = {0x002, 0x003, 0x004, 0x005};
+constexpr uint32_t kFuncIdCellVoltage[4] = {0x012, 0x013, 0x014, 0x015};
 constexpr uint32_t kFuncIdFaultStatuses = 0x006;
+constexpr uint32_t kFuncIdPackVoltage = 0x201; 
+constexpr uint32_t kFuncIdPackCurrent = 0x202; 
+constexpr uint32_t kFuncIdEnergy = 0x203; 
+constexpr uint32_t kFuncIdPackResistance = 0x204; 
+constexpr uint32_t kFuncIdDigitalIn = 0x205; 
+//constexpr uint32_t kNodeIdPackResistance = 0x204; 
+//constexpr uint32_t kNodeIdPackResistance = 0x204; 
+
+
+
+
+
+
+
 constexpr uint32_t kFuncIdThrottleValue = 0x200;
 constexpr uint32_t kFuncIdBreakValue = 0x008;
 constexpr uint32_t kFuncIdSteeringValue = 0x009;
 // Full COB-IDs
 constexpr uint32_t kCobIdTPDO5 = 0x242;
-// constexpr uint32_t kCobIdTPDO5 = 0x241;  // including throttle voltage
-// payload constexpr uint32_t kCobIdTPDO5 = 0x80000000; // new COB-ID for
-// testing
-constexpr uint32_t kCobIdNode3Heartbeat = 0x611;
-constexpr uint32_t kCobIdNode4Heartbeat = 0x621;
-constexpr uint32_t kCobIdCellTempHeartbeat = 0x631;
-constexpr uint32_t kCobIdP2s = 0x613;
-constexpr uint32_t kCobIdS2p = 0x622;
+
+
 
 // Payload constants
 constexpr uint32_t kPayloadHeartbeat = 0x1;
@@ -79,6 +81,12 @@ struct ThrottleMessage : public CANTxFrame {
    */
   explicit ThrottleMessage(uint16_t throttleVoltage);
 };
+
+struct DigitalMessage : public CANTxFrame{
+	
+	explicit DigitalMessage(DigitalInput pin, bool digitalState);
+};
+
 
 /**
  * TPDO sent from Teensy to master motor controller

@@ -18,11 +18,8 @@ enum class CanBusBaudRate : uint8_t {
 
 class CanBus {
  public:
-  CanBus(uint32_t id, CANDriver* canp, CanBusBaudRate baud, bool loopback);
+  CanBus(CANDriver* canp, CanBusBaudRate baud, bool loopback);
   virtual ~CanBus();
-
-  void setFilters(std::initializer_list<uint32_t> filters);
-  bool send(uint64_t data);
   bool send(const CANTxFrame& msg);
   bool recv(CANRxFrame& msg);
 

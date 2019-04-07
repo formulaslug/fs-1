@@ -52,9 +52,8 @@ constexpr CANConfig MakeConfig(CanBusBaudRate baud, bool loopback) {
   return {CAN_MCR_ABOM | CAN_MCR_AWUM | CAN_MCR_TXFP, btr};
 }
 
-CanBus::CanBus(uint32_t id, CANDriver* canp, CanBusBaudRate baud,
+CanBus::CanBus(CANDriver* canp, CanBusBaudRate baud,
                bool loopback) {
-  m_id = id;
   m_canp = canp;
 
   CANConfig config = MakeConfig(baud, loopback);
@@ -78,40 +77,7 @@ CanBus::CanBus(uint32_t id, CANDriver* canp, CanBusBaudRate baud,
 
 CanBus::~CanBus() { canStop(m_canp); }
 
-void CanBus::setFilters(std::initializer_list<uint32_t> filters) {
-  std::vector<CANFilter> filterArray;
-  CANFilter temp;
 
-  size_t i = 0;
-  for (auto filter : filters) {
-    temp.mode = 1;        // mask mode
-    temp.scale = 1;       // 32 bits mode
-    temp.assignment = 0;  // must be 0 in this version of the driver
-
-    temp.register1 = filter;
-
-    filterArray.push_back(temp);
-
-    ++i;
-  }
-
-  // TODO: filters currently do nothing
-  static_cast<void>(filterArray);
-}
-
-// NOTE: Unused - implemented for testing
-bool CanBus::send(uint64_t data) {
-  static CANTxFrame msg;
-
-  msg.IDE = CAN_IDE_STD;
-  msg.EID = m_id;
-  msg.RTR = CAN_RTR_DATA;
-  msg.DLC = 8;
-  msg.data32[0] = data >> 32;         // MS 32 bits
-  msg.data32[1] = data & 0xFFFFFFFF;  // LS 32 bits
-
-  return send(msg);
-}
 
 /*
  * @note A blinking LED for the CAN status LEDs indicates alterning

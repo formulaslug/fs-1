@@ -5,12 +5,12 @@
 #include <stdint.h>
 
 #include <vector>
-
+#include "Gpio.h"
 #include "Event.h"
 #include "EventQueue.h"
-#include "Gpio.h"
 #include "ch.h"
 #include "hal.h"
+
 
 /**
  *
