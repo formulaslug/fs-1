@@ -40,4 +40,5 @@ class CanChSubsys {
   // @brief Inf loop that MUST be called within created static thread
   void runTxThread();
   void runRxThread();
+  void runThread();
 };
