@@ -17,14 +17,14 @@
 static THD_WORKING_AREA(canLvThreadFuncWa, 128);
 static THD_FUNCTION(canLvThreadFunc, canChSubsys) {
 	chRegSetThreadName("CAN LV");
-	static_cast<CanChSubsys*>(canChSubsys)->runTxThread(); 	//UNSURE IF BOTH CAN BE RUN IN THE SAME THREAD
-	static_cast<CanChSubsys*>(canChSubsys)->runRxThread();
+	static_cast<CanChSubsys*>(canChSubsys)->runTxThread(); //UNSURE IF BOTH CAN BE RUN IN THE SAME THREAD BUT PROB NOT
+	static_cast<CanChSubsys*>(canChSubsys)->runRxThread();//REWRITE AS ONE THREAD OR SPLIT INTO TWO STATIC THREADS
 }
 
 static THD_WORKING_AREA(canHvThreadFuncWa, 128);
 static THD_FUNCTION(canHvThreadFunc, canChSubsys) {
 	chRegSetThreadName("CAN HV");
-	static_cast<CanChSubsys*>(canChSubsys)->runTxThread();	//UNSURE IF BOTH CAN BE RUN IN THE SAME THREAD
+	static_cast<CanChSubsys*>(canChSubsys)->runTxThread();
 	static_cast<CanChSubsys*>(canChSubsys)->runRxThread();
 }
 
@@ -45,8 +45,6 @@ static THD_FUNCTION(timerThreadFunc, timerChSubsys) {
 	chRegSetThreadName("Timers");
 	static_cast<TimerChSubsys*>(timerChSubsys)->runThread();
 }
-
-
 
 int main() {
 
@@ -70,8 +68,6 @@ int main() {
 	AdcChSubsys adcChSubsys = AdcChSubsys(fsmEventQueue);
 	DigInChSubsys digInChSubsys = DigInChSubsys(fsmEventQueue);
 	TimerChSubsys timerChSubsys = TimerChSubsys(fsmEventQueue);
-	
-	
 
 	/*
 	 * Create threads (many of which are driving subsystems)
@@ -99,19 +95,31 @@ int main() {
 				palSetPad(BSPD_FAULT_INDICATOR_PORT, BSPD_FAULT_INDICATOR_PIN); // IMD
 				DigitalInput digInPin = e.digInPin();
 				bool digInState = e.digInState();
-				DigitalMessage digitalMsg(digInPin,digInState);
+				DigitalMessage digitalMsg(digInPin, digInState);
 				canLvChSubsys.startSend(digitalMsg);
 
 				switch (digInPin) {
 
 					case DigitalInput::kToggleUp:
-
+						if (digInState) {
+							vehicle.dashInputs |= toggleUp;
+						} else {
+							vehicle.dashInputs &= ~toggleUp;
+						}
 						break;
 					case DigitalInput::kToggleDown:
-
+						if (digInState) {
+							vehicle.dashInputs |= toggleDown;
+						} else {
+							vehicle.dashInputs &= ~toggleDown;
+						}
 						break;
 					case DigitalInput::kReverseButton:
-
+						if (digInState) {
+							vehicle.dashInputs |= revButton;
+						} else {
+							vehicle.dashInputs &= ~revButton;
+						}
 						break;
 					default:
 						break;
@@ -192,6 +200,8 @@ int main() {
 					} else {
 						ThrottleMessage throttleMessage(throttle);
 						canLvChSubsys.startSend(throttleMessage);
+//						canHvChSubsys.startSend(throttleMessageL);
+//						canHvChSubsys.startSend(throttleMessageR);
 					}
 				} else if (e.adcPin() == Gpio::kA1) {
 					uint16_t throttle = throttleFilter.filterLms(
@@ -207,10 +217,9 @@ int main() {
 					}
 				}
 			} else if (e.type() == Event::Type::kTimerTimeout) { //Create Timer Subsys?
-				
+
 				vehicle.secTimerDone = 1;
-				
-				
+
 			}
 		}
 		vehicle.FSM(); //update vehicle state

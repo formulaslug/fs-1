@@ -12,10 +12,15 @@ constexpr uint8_t kNumButtons = 2;
 static constexpr uint8_t kOn = 1;
 static constexpr uint8_t kOff = 0;
 static constexpr uint16_t kBrakeThreshold = 512;
+static constexpr uint16_t kThrottleThreshold = 512;
 
 // Operating on all 8 bits so that can be notted "~"
 static constexpr uint8_t kLEDOn = 0xff;
 static constexpr uint8_t kLEDOff = 0x00;
+
+static constexpr uint8_t toggleUp  = 4;
+static constexpr uint8_t toggleDown = 2;
+static constexpr uint8_t revButton = 1;
 
 enum States {
 	kInit, kProfileSelect, kForward, kDelay, kReverse
@@ -62,6 +67,8 @@ public:
 	uint16_t throttleVoltage = 1;
 	uint16_t brakeVoltage = 1;
 	uint8_t maxSpeed = 5; // 5 speed units
+	
+	uint8_t dashInputs = 0; 
 
 	uint8_t cellVoltages[28];
 	uint8_t cellTemps[28];

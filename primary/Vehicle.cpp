@@ -28,51 +28,53 @@ void Vehicle::profileChange(uint8_t prof) {
 	}
 }
 
-
-
 void Vehicle::FSM() {
 	switch (state) {
 		case kInit:
+			profileChange(driveProfile);  //load the ksafe params on init
 			state = kProfileSelect;
 			break;
 		case kProfileSelect:
-			if (kToggleDown) {			//Profile selections
-				if (kReverseButton) {
-					driveProfile += 1;
-					profileChange (driveProfile);
-				} else if (kReverseButton && (driveProfile == kLudicrous)) {
+			if (dashInputs == (toggleDown | revButton)) {	//Profile selections
+				if (driveProfile == kLudicrous) {
 					driveProfile = 0;
+					profileChange (driveProfile);
+				} else {
+					driveProfile += 1;
 					profileChange (driveProfile);
 				}
 				state = kProfileSelect;
-			} else if (kToggleUp && (kBrakeVoltage > kBrakeThreshold)) { //Move to Drive Mode
+			} else if ((dashInputs & toggleDown)
+					&& (brakeVoltage > kBrakeThreshold)
+					&& (throttleVoltage < kThrottleThreshold)) { //Move to Drive Mode if toggle up with foot on brake and no throttle
 				state = kForward;
 			} else {
 				state = kProfileSelect;
 			}
 			break;
 		case kForward:
-			if (kReverseButton) {
+			if (dashInputs & revButton) {
+				secTimerDone = 0;        //make sure timer flag is low if delay wasnt completed 
 				state = kDelay;
-				chVTReset(&vtSec);
-				chVTSet(&vtSec, TIME_MS2I(1000),NULL, NULL); //ADD CALLBACK
+				chVTReset (&vtSec);
+				chVTSet(&vtSec, TIME_MS2I(1000), NULL, NULL); //ADD CALLBACK THAT POSTS EVENT 
 			} else {
 				state = kForward;
 			}
 			break;
 		case kDelay:
-			
-			if (kReverseButton && secTimerDone) {
+
+			if ((dashInputs & revButton) && secTimerDone) {
 				secTimerDone = 0;
 				state = kReverse;
-			} else if (kReverseButton) {
+			} else if (dashInputs & revButton) {
 				state = kDelay;
 			} else {
 				state = kForward;
 			}
 			break;
 		case kReverse:
-			if (kReverseButton) {
+			if (dashInputs & revButton) {
 				state = kReverse;
 			} else {
 				state = kForward;
