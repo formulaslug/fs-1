@@ -17,15 +17,14 @@
 static THD_WORKING_AREA(canLvThreadFuncWa, 128);
 static THD_FUNCTION(canLvThreadFunc, canChSubsys) {
 	chRegSetThreadName("CAN LV");
-	static_cast<CanChSubsys*>(canChSubsys)->runTxThread(); //UNSURE IF BOTH CAN BE RUN IN THE SAME THREAD BUT PROB NOT
-	static_cast<CanChSubsys*>(canChSubsys)->runRxThread();//REWRITE AS ONE THREAD OR SPLIT INTO TWO STATIC THREADS
+	static_cast<CanChSubsys*>(canChSubsys)->runThread(); //UNSURE IF BOTH CAN BE RUN IN THE SAME THREAD BUT PROB NOT
+//	static_cast<CanChSubsys*>(canChSubsys)->runRxThread();//REWRITE AS ONE THREAD OR SPLIT INTO TWO STATIC THREADS
 }
 
 static THD_WORKING_AREA(canHvThreadFuncWa, 128);
 static THD_FUNCTION(canHvThreadFunc, canChSubsys) {
 	chRegSetThreadName("CAN HV");
-	static_cast<CanChSubsys*>(canChSubsys)->runTxThread();
-	static_cast<CanChSubsys*>(canChSubsys)->runRxThread();
+	static_cast<CanChSubsys*>(canChSubsys)->runThread();
 }
 
 static THD_WORKING_AREA(adcThreadFuncWa, 128);

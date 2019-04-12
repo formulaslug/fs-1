@@ -40,7 +40,7 @@ void CanChSubsys::runTxThread() {
  * @brief subsystem run function for CAN TX called from within a
  *        ChibiOS static thread
  */
-void CanChSubsys::runRxThread() {
+void CanChSubsys::runThread() {
   event_listener_t el;
   chEvtRegister(&(m_canBus.m_canp->rxfull_event), &el, 0);
 
@@ -53,6 +53,7 @@ void CanChSubsys::runRxThread() {
     {
       std::lock_guard<chibios_rt::Mutex> lock(m_canBusMut);
       m_canBus.processRxMessages();
+      m_canBus.processTxMessages();
     }
 
     // generate events from any received messages
