@@ -9,10 +9,17 @@
 
 TimerChSubsys::TimerChSubsys(EventQueue& eq) :
 		m_eventQueue(eq) {
+
+//	chVTObjectInit (&vt_0);
+//	chVTObjectInit (&vt_1);
+//	chVTObjectInit (&vt_2);
+//	chVTObjectInit (&vt_3);
+	for(int i = 0; i<4; i++){
+		addTimer();
+	}
 }
 
 bool TimerChSubsys::addTimer() {
-
 	stop();
 	m_timers[m_numTimers] = true;
 	m_timerStates[m_numTimers] = false;
@@ -59,6 +66,7 @@ void TimerChSubsys::runThread() {
  *       to ensure consistent in user's implementation
  */
 bool TimerChSubsys::getState(uint8_t timerNum) {
+
 	return m_timerStates[timerNum];
 }
 

@@ -9,10 +9,12 @@
 #include "CanOpenPdo.h"
 #include "DigInChSubsys.h"
 #include "EventQueue.h"
-#include "timerChSubsys.h"
+#include "TimerChSubsys.h"
 #include "Vehicle.h"
 #include "ch.hpp"
 #include "hal.h"
+
+
 
 static THD_WORKING_AREA(canLvThreadFuncWa, 128);
 static THD_FUNCTION(canLvThreadFunc, canChSubsys) {
@@ -168,7 +170,6 @@ int main() {
 							vehicle.cellVoltages[i + 21] = canFrame[i];
 						}
 						break;
-
 					case kFuncIdFaultStatuses: // Replace with State ID 
 
 						break;
@@ -188,41 +189,31 @@ int main() {
 						break;
 				}
 			} else if (e.type() == Event::Type::kAdcConversion) {
+				uint16_t throttle = throttleFilter.filterLms(
+						static_cast<uint16_t>(e.adcValue()));
 				if (e.adcPin() == Gpio::kA2) {
-					uint16_t throttle = throttleFilter.filterLms(
-							static_cast<uint16_t>(e.adcValue()));
-
-					// output non-zero if passed sensitivity margin
-					if (throttle < 130) {
-						ThrottleMessage throttleMessage(0);
-						canLvChSubsys.startSend(throttleMessage);
-					} else {
-						ThrottleMessage throttleMessage(throttle);
-						canLvChSubsys.startSend(throttleMessage);
-//						canHvChSubsys.startSend(throttleMessageL);
-//						canHvChSubsys.startSend(throttleMessageR);
-					}
+					vehicle.throttleA = throttle;
 				} else if (e.adcPin() == Gpio::kA1) {
-					uint16_t throttle = throttleFilter.filterLms(
-							static_cast<uint16_t>(e.adcValue()));
-
-					// output non-zero if passed sensitivity margin
-					if (throttle < 130) {
-						ThrottleMessage throttleMessage(0);
-						canLvChSubsys.startSend(throttleMessage);
-					} else {
-						ThrottleMessage throttleMessage(throttle);
-						canLvChSubsys.startSend(throttleMessage);
-					}
+					vehicle.throttleB = throttle;
 				}
+				if ((vehicle.throttleA < vehicle.throttleB + maxReading * 10)
+						&& (vehicle.throttleA
+								> vehicle.throttleB - maxReading * 10)) {
+
+				} else {
+//					chVTReset(&vehicle.vtThrottleFault);
+//					chVTSet(&vehicle.vtThrottleFault, TIME_MS2I(100), NULL,
+//							NULL); //ADD CALLBACK THAT POSTS EVENT 
+				}
+
 			} else if (e.type() == Event::Type::kTimerTimeout) { //Create Timer Subsys?
 
-				vehicle.secTimerDone = 1;
+				//vehicle.secTimerDone = 1;
 
 			}
 		}
 		vehicle.FSM(); //update vehicle state
 		// TODO: use condition var to signal that events are present in the queue
-		chThdSleepMilliseconds(1); // must be fast enough to deplete event queue quickly enough
+		//chThdSleepMilliseconds(1); // must be fast enough to deplete event queue quickly enough
 	}
 }

@@ -9,7 +9,6 @@
 #include "EventQueue.h"
 #include "ch.h"
 #include "hal.h"
-#include "mcuconfFs.h"
 
 CanChSubsys::CanChSubsys(CanBus& cb, chibios_rt::Mutex& cbMut, EventQueue& eq)
     : m_canBus(cb), m_canBusMut(cbMut), m_eventQueue(eq) {}
@@ -70,7 +69,6 @@ void CanChSubsys::runThread() {
         frame[i] = msg.data8[i];
       }
       // write COBID to event params
-      palSetPad(STARTUP_LED_PORT, STARTUP_LED_PIN);
       Event e = Event(Event::Type::kCanRx, msg.EID, frame);
       // push event
       m_eventQueue.push(e);

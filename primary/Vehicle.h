@@ -13,17 +13,27 @@ static constexpr uint8_t kOn = 1;
 static constexpr uint8_t kOff = 0;
 static constexpr uint16_t kBrakeThreshold = 512;
 static constexpr uint16_t kThrottleThreshold = 512;
+static constexpr uint16_t maxReading = -1; //max reading?
 
 // Operating on all 8 bits so that can be notted "~"
 static constexpr uint8_t kLEDOn = 0xff;
 static constexpr uint8_t kLEDOff = 0x00;
 
-static constexpr uint8_t toggleUp  = 4;
+static constexpr uint8_t toggleUp = 4;
 static constexpr uint8_t toggleDown = 2;
 static constexpr uint8_t revButton = 1;
 
+static constexpr uint8_t BSPDFault = 4;
+static constexpr uint8_t IMDFault = 2;
+static constexpr uint8_t throttleFault = 1;
+
+enum timers {
+	vtRev = 0, vtFor,
+
+};
+
 enum States {
-	kInit, kProfileSelect, kForward, kDelay, kReverse
+	kInit, kProfileSelect, kForward, kDelayF, kDelayR, kReverse
 };
 
 enum DriveProfiles {
@@ -45,30 +55,32 @@ enum AnalogInputs {
 	kThrottleVoltage, kBrakeVoltage
 };
 
-
 class Vehicle {
 
 public:
-	
-	
+
 	Vehicle();
-	virtual_timer_t vtSec;
+
 	void profileChange(uint8_t prof);
 	void FSM();
-    void setTimerFlag();
+	void setTimerFlag();
 	void secTimer();
 
-	
 	uint8_t state = kInit;
 	uint8_t driveProfile = kSafe;
-	
+
 	uint8_t secTimerDone = 0;
-	
+
+	uint16_t throttleA = 0;
+	uint16_t throttleB = 0;
+
 	uint16_t throttleVoltage = 1;
 	uint16_t brakeVoltage = 1;
+
+	uint8_t faults = 0;
 	uint8_t maxSpeed = 5; // 5 speed units
-	
-	uint8_t dashInputs = 0; 
+
+	uint8_t dashInputs = 0;
 
 	uint8_t cellVoltages[28];
 	uint8_t cellTemps[28];

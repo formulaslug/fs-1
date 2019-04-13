@@ -43,6 +43,11 @@ public:
 	void runThread();
 
 private:
+	static virtual_timer_t vt_0;
+	static virtual_timer_t vt_1;
+	static virtual_timer_t vt_2;
+	static virtual_timer_t vt_3;
+
 	static constexpr uint16_t kMaxNumTimers = 1;
 	uint16_t m_numTimers = 0;
 
