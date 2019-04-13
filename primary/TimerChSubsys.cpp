@@ -67,7 +67,7 @@ void TimerChSubsys::runThread() {
  */
 bool TimerChSubsys::getState(uint8_t timerNum) {
 
-	return m_timerStates[timerNum];
+	return m_timerStates[timerNum]; // DOESNT DO ANYTHING
 }
 
 bool TimerChSubsys::getSavedState(uint8_t timerNum) {
