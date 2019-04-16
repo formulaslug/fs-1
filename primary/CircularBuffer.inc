@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <algorithm>
+
 
 template <class T>
 CircularBuffer<T>::CircularBuffer(size_t size) : m_data(size) {}

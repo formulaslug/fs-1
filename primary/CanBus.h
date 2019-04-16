@@ -3,9 +3,21 @@
 #pragma once
 
 #include <initializer_list>
+#include <cmath>
+#include <cstdio>
+#include <vector>
+#include <stdint.h>
 
-#include "CircularBuffer.h"
 #include "hal.h"
+#include "ch.h"
+#include "CircularBuffer.h"
+#include "Event.h"
+#include "EventQueue.h"
+#include "mcuconfFs.h"
+
+
+
+
 
 enum class CanBusBaudRate : uint8_t {
   k125k,  // 125 kHz

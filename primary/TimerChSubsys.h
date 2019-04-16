@@ -8,9 +8,12 @@
 
 #include "Event.h"
 #include "EventQueue.h"
-#include "Gpio.h"
 #include "ch.h"
 #include "hal.h"
+
+
+#define TIMER_INIT_NUM 4
+
 //#include "Pins.h"
 
 /**
@@ -28,7 +31,12 @@
  *       within the context of a chibios static thread
  */
 class TimerChSubsys {
+	
+
 public:
+	
+	//static virtual_timer_t vt_timers[10]; //STRUCT OF TIMER OBJECTS
+
 	explicit TimerChSubsys(EventQueue& eq);
 
 	/**
@@ -37,22 +45,20 @@ public:
 	 * @param pin Gpio pin (port and pin number)
 	 */
 	bool addTimer();
+	void startTimer(uint8_t timerNum, uint16_t ms);
+	static void timerDone(void *timerState);
 	bool getState(uint8_t timerNum);
 	bool getSavedState(uint8_t timerNum);
 
 	void runThread();
 
 private:
-	static virtual_timer_t vt_0;
-	static virtual_timer_t vt_1;
-	static virtual_timer_t vt_2;
-	static virtual_timer_t vt_3;
 
-	static constexpr uint16_t kMaxNumTimers = 1;
+	static constexpr uint16_t kMaxNumTimers = 10;
 	uint16_t m_numTimers = 0;
 
 	// @note true if timer is running, false otherwise
-	std::array<bool, kMaxNumTimers> m_timers = { };
+	std::array<virtual_timer_t, kMaxNumTimers> m_timers = { };
 	std::array<bool, kMaxNumTimers> m_timerStates = { };
 
 	bool m_subsysActive = false;

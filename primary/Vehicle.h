@@ -12,7 +12,7 @@ constexpr uint8_t kNumButtons = 2;
 static constexpr uint8_t kOn = 1;
 static constexpr uint8_t kOff = 0;
 static constexpr uint16_t kBrakeThreshold = 512;
-static constexpr uint16_t kThrottleThreshold = 512;
+static constexpr uint16_t kThrottleThreshold = 1;
 static constexpr uint16_t maxReading = -1; //max reading?
 
 // Operating on all 8 bits so that can be notted "~"
@@ -73,6 +73,7 @@ public:
 
 	uint16_t throttleA = 0;
 	uint16_t throttleB = 0;
+	uint16_t throttleAvg = 0;
 
 	uint16_t throttleVoltage = 1;
 	uint16_t brakeVoltage = 1;

@@ -2,7 +2,7 @@
 
 #include "CanOpenPdo.h"
 
-#include <cstring>
+
 
 // TODO: Make COB-ID naming match CANOpen convention
 

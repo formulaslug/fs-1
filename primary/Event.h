@@ -6,7 +6,7 @@
 
 #include <array>
 #include <vector>
-#include "Gpio.h"
+#include "mcuconfFs.h"
 
 class Event {
  public:
@@ -28,6 +28,7 @@ class Event {
   std::array<uint16_t, 8> canFrame();
   DigitalInput digInPin();
   bool digInState();
+  uint8_t timer();
 
  private:
   Type m_type = kNone;

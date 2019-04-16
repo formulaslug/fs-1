@@ -2,26 +2,19 @@
 
 #include "TimerChSubsys.h"
 
-#include "Event.h"
-#include "ch.hpp"
-#include "hal.h"
-#include "mcuconfFs.h"
-
 TimerChSubsys::TimerChSubsys(EventQueue& eq) :
 		m_eventQueue(eq) {
 
-//	chVTObjectInit (&vt_0);
-//	chVTObjectInit (&vt_1);
-//	chVTObjectInit (&vt_2);
-//	chVTObjectInit (&vt_3);
-	for(int i = 0; i<4; i++){
-		addTimer();
+	for (int i = 0; i < TIMER_INIT_NUM; i++) {
+		chVTObjectInit (&m_timers[i]);
+		m_timerStates[m_numTimers] = false; 
+		m_numTimers++;
 	}
 }
 
 bool TimerChSubsys::addTimer() {
 	stop();
-	m_timers[m_numTimers] = true;
+	chVTObjectInit (&m_timers[m_numTimers]);
 	m_timerStates[m_numTimers] = false;
 	m_numTimers++;
 
@@ -77,6 +70,18 @@ bool TimerChSubsys::getSavedState(uint8_t timerNum) {
 // TODO: implement full subsystem, then implement pin adding
 void TimerChSubsys::start() {
 	m_subsysActive = true;
+}
+
+void TimerChSubsys::startTimer(uint8_t timerNum, uint16_t ms) {
+	
+	chVTReset (&m_timers[timerNum]);
+	chVTSet(&m_timers[timerNum], TIME_MS2I(ms), TimerChSubsys::timerDone, &m_timerStates[timerNum]); //ADD CALLBACK THAT POSTS EVENT 
+	m_timerStates[timerNum] = true;
+}
+
+void TimerChSubsys::timerDone(void *timerState){
+	bool *state = static_cast<bool*>(timerState);
+	*state = false;
 }
 
 /**

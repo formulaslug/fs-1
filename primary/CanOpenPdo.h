@@ -3,10 +3,11 @@
 #pragma once
 
 #include <stdint.h>
+#include <cstring>
 
 #include "ch.h"
 #include "hal.h"
-#include "Gpio.h"
+#include "mcuconfFs.h"
 
 // COB-IDs: MAX LENGTH of 12 bits, only the LSB 12 should be used
 // IDs specified in format 0x<system-id><node-id><function-id>

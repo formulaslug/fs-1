@@ -2,10 +2,7 @@
 
 #include "DigInChSubsys.h"
 
-#include "Event.h"
-#include "ch.hpp"
-#include "hal.h"
-#include "mcuconfFs.h"
+
 
 DigInChSubsys::DigInChSubsys(EventQueue& eq) : m_eventQueue(eq) {}
 
@@ -123,5 +120,5 @@ stm32_gpio_t* DigInChSubsys::getPort(DigitalInput p) {
 }
 
 bool DigInChSubsys::getState(DigitalInput p) {
-  return palReadPad(getPort(p), getPinNum(p)) != 0;
+  return palReadPad(getPort(p), getPinNum(p)) == 0;
 }

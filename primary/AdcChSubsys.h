@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 #include <vector>
-#include "Gpio.h"
+#include "mcuconfFs.h"
 #include "Event.h"
 #include "EventQueue.h"
 #include "ch.h"
@@ -32,7 +32,6 @@ class AdcChSubsys {
    */
   bool addPin(Gpio pin);
 
-  bool removePin(Gpio pin);
 
   /**
    * ADC subsystem run function

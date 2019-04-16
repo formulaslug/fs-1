@@ -4,6 +4,7 @@
 
 #include <cstddef>
 #include <vector>
+#include <algorithm>
 
 /**
  * This is a simple circular buffer so we don't need to "bucket brigade" copy

@@ -2,11 +2,6 @@
 
 #include "AdcChSubsys.h"
 
-#include "Event.h"
-#include "ch.hpp"
-#include "hal.h"
-#include "mcuconfFs.h"
-
 // TODO: Test system with all four ADC inputs
 // BRAKE_VALUE_PIN -> ADC123_IN1 (POT 2)
 //
@@ -109,34 +104,7 @@ void AdcChSubsys::runThread() {
   }
 }
 
-bool AdcChSubsys::removePin(Gpio pin) {
-  // return failure if pin wasn't added
-  if (!m_pins[static_cast<uint32_t>(pin)]) return false;
 
-  // stop the interface momentarily
-  stop();
-
-  // remove the pin internally
-  m_pins[static_cast<uint32_t>(pin)] = false;
-  m_numPins--;
-
-  // update the conversion group configuration
-  // increment the number of channels (2nd member of struct)
-  m_adcConversionGroup.num_channels -= 1;
-  // add sample charge time config (8th member of struct)
-  m_adcConversionGroup.smpr2 ^=
-      kSampleChargeTimeMap[static_cast<uint32_t>(pin)];
-  // add conversion sequence config (11th member of struct)
-  m_adcConversionGroup.sqr3 ^=
-      kConversionSequenceMap[static_cast<uint32_t>(pin)];
-
-  // start the interface with the new configuration (if at least
-  // one pin is still registered in the subsystem)
-  if (m_numPins > 0) start();
-
-  // return success
-  return false;
-}
 
 // TODO: implement full subsystem, then implement pin adding
 void AdcChSubsys::start() { m_subsysActive = true; }

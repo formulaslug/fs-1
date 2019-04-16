@@ -2,6 +2,8 @@
 
 #include "Vehicle.h"
 
+#include "mcuconfFs.h"
+
 Vehicle::Vehicle() {
 	for (auto& led : ledStates) {
 		led = kLEDOff;
@@ -35,6 +37,13 @@ void Vehicle::FSM() {
 			state = kProfileSelect;
 			break;
 		case kProfileSelect:
+//			palWritePad(BSPD_FAULT_INDICATOR_PORT, BSPD_FAULT_INDICATOR_PIN,
+//					PAL_HIGH);  // BSPD
+//			palWritePad(AMS_FAULT_INDICATOR_PORT, AMS_FAULT_INDICATOR_PIN,
+//					PAL_LOW);  // AMS
+//			palWritePad(IMD_FAULT_INDICATOR_PORT, IMD_FAULT_INDICATOR_PIN,
+//					PAL_LOW);  // IMD
+
 			if (dashInputs == (toggleDown | revButton)) {	//Profile selections
 				if (driveProfile == kLudicrous) {
 					driveProfile = 0;
@@ -59,18 +68,24 @@ void Vehicle::FSM() {
 			if ((dashInputs & toggleUp) && (brakeVoltage > kBrakeThreshold)
 					&& (throttleVoltage < kThrottleThreshold)) {
 				state = kDelayF;
-			} else if ((dashInputs & toggleUp) 				//Hold toggle up, foot off gas, foot on break, 1 second has elapsed
-					&& (brakeVoltage > kBrakeThreshold) 
+			} else if ((dashInputs & toggleUp) //Hold toggle up, foot off gas, foot on break, 1 second has elapsed
+			&& (brakeVoltage > kBrakeThreshold)
 					&& (throttleVoltage < kThrottleThreshold)
-					&& (secTimerDone)) { 
+					&& (secTimerDone)) {
 				state = kForward;
 
-			}else{
+			} else {
 				state = kProfileSelect;
 			}
 
 			break;
 		case kForward:
+//			palWritePad(BSPD_FAULT_INDICATOR_PORT, BSPD_FAULT_INDICATOR_PIN,
+//					PAL_LOW);  // BSPD
+//			palWritePad(AMS_FAULT_INDICATOR_PORT, AMS_FAULT_INDICATOR_PIN,
+//					PAL_HIGH);  // AMS
+//			palWritePad(IMD_FAULT_INDICATOR_PORT, IMD_FAULT_INDICATOR_PIN,
+//					PAL_LOW);  // IMD
 			if (dashInputs & revButton) {
 				state = kDelayR;
 				secTimerDone = 0; //make sure timer flag is low if delay wasnt completed 
@@ -92,6 +107,12 @@ void Vehicle::FSM() {
 			}
 			break;
 		case kReverse:
+//			palWritePad(BSPD_FAULT_INDICATOR_PORT, BSPD_FAULT_INDICATOR_PIN,
+//					PAL_LOW);  // BSPD
+//			palWritePad(AMS_FAULT_INDICATOR_PORT, AMS_FAULT_INDICATOR_PIN,
+//					PAL_LOW);  // AMS
+//			palWritePad(IMD_FAULT_INDICATOR_PORT, IMD_FAULT_INDICATOR_PIN,
+//					PAL_HIGH);  // IMD
 			if (dashInputs & revButton) {
 				state = kReverse;
 			} else {

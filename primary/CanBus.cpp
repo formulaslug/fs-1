@@ -2,11 +2,7 @@
 
 #include "CanBus.h"
 
-#include <cmath>
-#include <cstdio>
-#include <vector>
 
-#include "mcuconfFs.h"
 
 /* baudrate = 36MHz / ((1 + BRP) * (3 + TS1 + TS2))
  * See STM32F103xx reference manual, 24.7.7 for info on CAN_BTR register.

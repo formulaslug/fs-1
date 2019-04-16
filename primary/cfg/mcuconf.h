@@ -33,9 +33,9 @@
 
 #define STM32F4xx_MCUCONF
 #define STM32F405_MCUCONF
-#define STM32F415_MCUCONF
-#define STM32F407_MCUCONF
-#define STM32F417_MCUCONF
+//#define STM32F415_MCUCONF
+//#define STM32F407_MCUCONF
+//#define STM32F417_MCUCONF
 
 /*
  * HAL driver system settings.
@@ -259,12 +259,12 @@
 /*
  * SERIAL driver system settings.
  */
-#define STM32_SERIAL_USE_USART1             FALSE
+#define STM32_SERIAL_USE_USART1             TRUE
 #define STM32_SERIAL_USE_USART2             TRUE
-#define STM32_SERIAL_USE_USART3             FALSE
-#define STM32_SERIAL_USE_UART4              FALSE
-#define STM32_SERIAL_USE_UART5              FALSE
-#define STM32_SERIAL_USE_USART6             FALSE
+#define STM32_SERIAL_USE_USART3             TRUE
+#define STM32_SERIAL_USE_UART4              TRUE
+#define STM32_SERIAL_USE_UART5              TRUE
+#define STM32_SERIAL_USE_USART6             TRUE
 #define STM32_SERIAL_USART1_PRIORITY        12
 #define STM32_SERIAL_USART2_PRIORITY        12
 #define STM32_SERIAL_USART3_PRIORITY        12
@@ -275,7 +275,7 @@
 /*
  * SPI driver system settings.
  */
-#define STM32_SPI_USE_SPI1                  TRUE
+#define STM32_SPI_USE_SPI1                  FALSE
 #define STM32_SPI_USE_SPI2                  FALSE
 #define STM32_SPI_USE_SPI3                  FALSE
 #define STM32_SPI_SPI1_RX_DMA_STREAM        STM32_DMA_STREAM_ID(2, 0)

@@ -2,9 +2,7 @@
 
 #include "Event.h"
 
-#include <array>
 
-#include "Gpio.h"
 
 Event::Event() {}
 
@@ -58,5 +56,6 @@ std::array<uint16_t, 8> Event::canFrame() {
 DigitalInput Event::digInPin() {
   return static_cast<DigitalInput>(m_params[0]);
 }
+uint8_t Event::timer(){return m_params[0]; }
 
 bool Event::digInState() { return static_cast<bool>(m_params[1]); }

@@ -2,13 +2,7 @@
 
 #include "CanChSubsys.h"
 
-#include <mutex>
 
-#include "CanBus.h"
-#include "Event.h"
-#include "EventQueue.h"
-#include "ch.h"
-#include "hal.h"
 
 CanChSubsys::CanChSubsys(CanBus& cb, chibios_rt::Mutex& cbMut, EventQueue& eq)
     : m_canBus(cb), m_canBusMut(cbMut), m_eventQueue(eq) {}
