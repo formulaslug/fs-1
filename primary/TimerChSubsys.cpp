@@ -8,14 +8,17 @@ TimerChSubsys::TimerChSubsys(EventQueue& eq) :
 	for (int i = 0; i < TIMER_INIT_NUM; i++) {
 		chVTObjectInit (&m_timers[i]);
 		m_timerStates[m_numTimers] = false; 
+		m_timerSavedStates[m_numTimers] = false; 
 		m_numTimers++;
 	}
+	start();
 }
 
 bool TimerChSubsys::addTimer() {
 	stop();
 	chVTObjectInit (&m_timers[m_numTimers]);
 	m_timerStates[m_numTimers] = false;
+	m_timerSavedStates[m_numTimers] = false; 
 	m_numTimers++;
 
 	// start the subsystem again with new configuration
@@ -32,12 +35,15 @@ void TimerChSubsys::runThread() {
 
 			for (uint8_t i = 0; i < m_numTimers; i++) {
 				// check for transition in pin state
-
+//				printf3("Timershit");
+				
 				// if pin changed states
 				bool currentState = getState(i);
 				if (currentState != getSavedState(i)) {
 					// save change
 					m_timerStates[i] = currentState;
+					m_timerSavedStates[i] = currentState;
+					
 					// queue event
 					events.push_back(Event(Event::Type::kTimerTimeout, i));
 				}
@@ -49,6 +55,7 @@ void TimerChSubsys::runThread() {
 			}
 		}
 		// sleep to yield processing until next sample of channels
+		
 		chThdSleepMilliseconds (m_sampleClkMs);
 	}
 }
@@ -64,7 +71,7 @@ bool TimerChSubsys::getState(uint8_t timerNum) {
 }
 
 bool TimerChSubsys::getSavedState(uint8_t timerNum) {
-	return m_timerStates[timerNum];
+	return m_timerSavedStates[timerNum];
 }
 
 // TODO: implement full subsystem, then implement pin adding
@@ -77,18 +84,14 @@ void TimerChSubsys::startTimer(uint8_t timerNum, uint16_t ms) {
 	chVTReset (&m_timers[timerNum]);
 	chVTSet(&m_timers[timerNum], TIME_MS2I(ms), TimerChSubsys::timerDone, &m_timerStates[timerNum]); //ADD CALLBACK THAT POSTS EVENT 
 	m_timerStates[timerNum] = true;
+	m_timerSavedStates[timerNum] = true;
 }
 
 void TimerChSubsys::timerDone(void *timerState){
 	bool *state = static_cast<bool*>(timerState);
 	*state = false;
 }
-
-/**
- * @note Subsystem should be stopped before any configurations are
- *       changed. Otherwise, partial configuration will temporarily
- *       corrupt conversion events send to the user's event queue
- */
+ 
 void TimerChSubsys::stop() {
 	m_subsysActive = false;
 }

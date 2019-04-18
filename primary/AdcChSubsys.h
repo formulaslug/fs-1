@@ -43,7 +43,7 @@ class AdcChSubsys {
   void runThread();
 
  private:
-  static constexpr uint32_t kNumGpio = 2;
+  static constexpr uint32_t kNumGpio = 4;
   static constexpr uint32_t kMaxNumGpio = 4;
   static constexpr uint32_t kSampleBuffDepth = 8;
 

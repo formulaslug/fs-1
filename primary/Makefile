@@ -106,6 +106,7 @@ include $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC/mk/port_v7m.mk
 include $(CHIBIOS)/os/various/cpp_wrappers/chcpp.mk
 include $(CHIBIOS)/os/hal/lib/streams/streams.mk
 
+
 # Define linker script file here
 # NOTE: Changed from STM32F303x8.ld
 LDSCRIPT= $(STARTUPLD)/STM32F407xG.ld

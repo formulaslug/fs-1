@@ -14,7 +14,10 @@
 
 #define TIMER_INIT_NUM 4
 
-//#include "Pins.h"
+static enum {
+	vt_SM_D = 0, vt_SM_R, vt_F_Throttle,
+} Timers;
+
 
 /**
  *
@@ -31,8 +34,6 @@
  *       within the context of a chibios static thread
  */
 class TimerChSubsys {
-	
-
 public:
 	
 	//static virtual_timer_t vt_timers[10]; //STRUCT OF TIMER OBJECTS
@@ -60,6 +61,8 @@ private:
 	// @note true if timer is running, false otherwise
 	std::array<virtual_timer_t, kMaxNumTimers> m_timers = { };
 	std::array<bool, kMaxNumTimers> m_timerStates = { };
+	std::array<bool, kMaxNumTimers> m_timerSavedStates = { };
+	
 
 	bool m_subsysActive = false;
 

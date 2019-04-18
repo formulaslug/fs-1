@@ -14,9 +14,8 @@
 #include "Event.h"
 #include "EventQueue.h"
 #include "mcuconfFs.h"
-
-
-
+//#include "fsprintf.h"
+//static auto printf3 = SDPrinter<&SD3>();
 
 
 enum class CanBusBaudRate : uint8_t {
