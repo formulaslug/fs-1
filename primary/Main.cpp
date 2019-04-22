@@ -14,6 +14,16 @@
 #include "TimerChSubsys.h"
 #include "Vehicle.h"
 
+/*TODO List
+ * 
+ * HV Throttle Commands
+ * BMS Error Handling
+ * 
+ * 
+ * 
+ * 
+ */
+
 static THD_WORKING_AREA(canTxLvThreadFuncWa, 128*2);
 static THD_FUNCTION(canTxLvThreadFunc, canChSubsys) {
 	chRegSetThreadName("CAN TX LV");
@@ -89,10 +99,10 @@ int main() {
 
 	Vehicle vehicle;
 
-	CanBus canBusLv(&CAND1, CanBusBaudRate::k1M, true);
+	CanBus canBusLv(&CAND1, CanBusBaudRate::k1M, false);
 	chibios_rt::Mutex canBusLvMut;
 
-	CanBus canBusHv(&CAND2, CanBusBaudRate::k1M, true);
+	CanBus canBusHv(&CAND2, CanBusBaudRate::k1M, false);
 	chibios_rt::Mutex canBusHvMut;
 
 	EventQueue fsmEventQueue = EventQueue();
@@ -172,9 +182,7 @@ int main() {
 			if (e.type() == Event::Type::kDigInTransition) {
 				DigitalInput digInPin = e.digInPin();
 				bool digInState = e.digInState();
-
 				switch (digInPin) {
-
 					case DigitalInput::kToggleUp:
 						if (digInState) {
 							vehicle.dashInputs |= toggleUp;
@@ -211,10 +219,12 @@ int main() {
 							printf3("BSPD Dicked\n");
 							palWritePad(BSPD_FAULT_INDICATOR_PORT,
 									BSPD_FAULT_INDICATOR_PIN, PAL_HIGH); // BSPD
+							vehicle.faults |= BSPDFault;				//BSPD Fucked
 						} else {
 							printf3("BSPD Undicked\n");
 							palWritePad(BSPD_FAULT_INDICATOR_PORT,
 									BSPD_FAULT_INDICATOR_PIN, PAL_HIGH); // BSPD
+							vehicle.faults &= ~BSPDFault;				//BSPD Reset
 						}
 						break;
 					default:
@@ -222,47 +232,47 @@ int main() {
 				}
 			} else if (e.type() == Event::Type::kCanRx) {
 
-				std::array < uint16_t, 8 > canFrame = e.canFrame();
+				std::array < uint16_t, 8 > canData = e.canFrame();
 				uint32_t canEid = e.canEid();
 				switch (canEid) {
-					case kFuncIdCellTempAdc[0]: // Replace with Cell Temp ID 0
+					case kFuncIdCellTempAdc[0]: // Replace with Cell Temp ID Row 0
 						for (int i = 0; i < 7; i++) {
-							vehicle.cellTemps[i] = canFrame[i];
+							vehicle.cellTemps[i] = canData[i];
 						}
 						break;
-					case kFuncIdCellTempAdc[1]: // Replace with Cell Temp ID 1
+					case kFuncIdCellTempAdc[1]: // Replace with Cell Temp ID Row 1
 						for (int i = 0; i < 7; i++) {
-							vehicle.cellTemps[i + 7] = canFrame[i];
+							vehicle.cellTemps[i + 7] = canData[i];
 						}
 						break;
-					case kFuncIdCellTempAdc[2]: // Replace with Cell Temp ID 2
+					case kFuncIdCellTempAdc[2]: // Replace with Cell Temp ID Row 2
 						for (int i = 0; i < 7; i++) {
-							vehicle.cellTemps[i + 14] = canFrame[i];
+							vehicle.cellTemps[i + 14] = canData[i];
 						}
 						break;
-					case kFuncIdCellTempAdc[3]: // Replace with Cell Temp ID 3
+					case kFuncIdCellTempAdc[3]: // Replace with Cell Temp ID Row 3
 						for (int i = 0; i < 7; i++) {
-							vehicle.cellTemps[i + 21] = canFrame[i];
+							vehicle.cellTemps[i + 21] = canData[i];
 						}
 						break;
-					case kFuncIdCellVoltage[0]: // Replace with Cell Voltage ID 0
+					case kFuncIdCellVoltage[0]: // Replace with Cell Voltage ID Row 0
 						for (int i = 0; i < 7; i++) {
-							vehicle.cellVoltages[i] = canFrame[i];
+							vehicle.cellVoltages[i] = canData[i];
 						}
 						break;
-					case kFuncIdCellVoltage[1]: // Replace with Cell Voltage ID 1
+					case kFuncIdCellVoltage[1]: // Replace with Cell Voltage ID Row 1
 						for (int i = 0; i < 7; i++) {
-							vehicle.cellVoltages[i + 7] = canFrame[i];
+							vehicle.cellVoltages[i + 7] = canData[i];
 						}
 						break;
-					case kFuncIdCellVoltage[2]: // Replace with Cell Voltage ID 2
+					case kFuncIdCellVoltage[2]: // Replace with Cell Voltage ID Row 2
 						for (int i = 0; i < 7; i++) {
-							vehicle.cellVoltages[i + 14] = canFrame[i];
+							vehicle.cellVoltages[i + 14] = canData[i];
 						}
 						break;
-					case kFuncIdCellVoltage[3]: // Replace with Cell Voltage ID 3
+					case kFuncIdCellVoltage[3]: // Replace with Cell Voltage ID Row 3
 						for (int i = 0; i < 7; i++) {
-							vehicle.cellVoltages[i + 21] = canFrame[i];
+							vehicle.cellVoltages[i + 21] = canData[i];
 						}
 						break;
 					case kFuncIdFaultStatuses: // Replace with State ID 
@@ -301,6 +311,13 @@ int main() {
 					vehicle.steeringIn = adcIn;
 //					printf3("Steering:%d\n", adcIn);
 				}
+				vehicle.HandleADCs();
+				ThrottleMessage throttleMessage(vehicle.throttleVal);
+				canLvChSubsys.startSend(throttleMessage);
+				SteeringMessage steeringMessage(vehicle.steeringAngle);
+				canLvChSubsys.startSend(steeringMessage);
+				BrakeMessage brakeMessage(vehicle.brakeVal);
+				canLvChSubsys.startSend(brakeMessage);
 
 			} else if (e.type() == Event::Type::kTimerTimeout) {
 				if (e.timer() == vt_SM_D) {
@@ -315,27 +332,22 @@ int main() {
 				} else {
 					printf3("What the timer shit\n");
 				}
-
 			}
-		}
-		if (vehicle.timerStartFlag > 0) {
-			
+		} //End Event Queue Stuff
+
+		if (vehicle.timerStartFlag > 0) { //Real burnt timer shit
 			if (vehicle.timerStartFlag & VT_SM_D) {
-//				printf3("Start D Timer\n");
 				vehicle.timerStartFlag = 0;
 				timerChSubsys.startTimer(vt_SM_D, 2000);
 			}
 			if (vehicle.timerStartFlag & VT_SM_R) {
-//				printf3("Start R Timer\n");
 				vehicle.timerStartFlag = 0;
 				timerChSubsys.startTimer(vt_SM_R, 2000);
 			}
 			if (vehicle.timerStartFlag & VT_F_Throttle) {
-//				printf3("Start F Timer\n");
 				vehicle.timerStartFlag = 0;
 				timerChSubsys.startTimer(vt_F_Throttle, 100);
 			}
-
 		}
 
 		vehicle.FSM(); //update vehicle state

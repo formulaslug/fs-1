@@ -25,7 +25,7 @@ class AnalogFilter {
  private:
   // TODO: implement with circular buffer abstraction
   // CircularBuffer<Event> m_samples{20};
-  std::array<uint32_t, 11> m_inputs = {};
-  std::array<uint32_t, 2> m_outputs = {};
+  std::array<uint16_t, 11> m_inputs = {};
+  std::array<uint16_t, 2> m_outputs = {};
   uint8_t m_currentIndex = 0;
 };

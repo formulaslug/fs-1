@@ -17,8 +17,7 @@ static constexpr uint8_t kOff = 0;
 
 static constexpr uint16_t kBrakeMin = 1870;
 static constexpr uint16_t kBrakeMax = 1970;
-static constexpr uint16_t kBrakeThreshold = (kBrakeMax - kBrakeMin)/10;
-
+static constexpr uint16_t kBrakeThreshold = 10;   //MAKE THIS REAL
 
 static constexpr uint16_t kThrottleThreshold = 30;
 static constexpr uint16_t kThrottleAMin = 1000;
@@ -29,6 +28,10 @@ static constexpr uint16_t kThrottleBMax = 1380;
 static constexpr uint16_t kSteeringMin = 1050;
 static constexpr uint16_t kSteeringMax = 3300;
 
+//BMS Konstants
+static constexpr uint8_t kVoltageMin = 200;
+static constexpr uint8_t kTempMax = 200;
+
 // Operating on all 8 bits so that can be notted "~"
 static constexpr uint8_t kLEDOn = 0xff;
 static constexpr uint8_t kLEDOff = 0x00;
@@ -37,6 +40,7 @@ static constexpr uint8_t toggleUp = 4;
 static constexpr uint8_t toggleDown = 2;
 static constexpr uint8_t revButton = 1;
 
+static constexpr uint8_t AMSFault = 8;
 static constexpr uint8_t BSPDFault = 4;
 static constexpr uint8_t IMDFault = 2;
 static constexpr uint8_t throttleFault = 1;
@@ -45,10 +49,15 @@ static constexpr uint8_t VT_SM_D = 4;
 static constexpr uint8_t VT_SM_R = 2;
 static constexpr uint8_t VT_F_Throttle = 1;
 
-
-
 enum States {
-	kInit, kProfileSelect, kProfileSelectBreak, kForward, kDelayF, kDelayR, kReverse
+	kInit,
+	kProfileSelect,
+	kProfileSelectBreak,
+	kForward,
+	kDelayF,
+	kDelayR,
+	kReverse,
+	kFault
 };
 
 enum DriveProfiles {
@@ -81,6 +90,7 @@ public:
 	void FSM();
 	void setTimerFlag();
 	void secTimer();
+	uint8_t FaultCheck();
 
 	uint8_t state = kInit;
 	uint8_t driveProfile = kSafe;
@@ -90,14 +100,13 @@ public:
 
 	uint16_t throttleA = 0;
 	uint16_t throttleB = 0;
-	uint16_t throttleVal = 0;
+	uint8_t throttleVal = 0;
 
 	uint16_t brakeVoltage = 1;
 	uint16_t brakeVal = 1;
-	
+
 	uint16_t steeringIn = 1;
 	uint16_t steeringAngle = 1;
-	
 
 	uint8_t faults = 0;
 	uint8_t maxSpeed = 5; // 5 speed units

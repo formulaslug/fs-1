@@ -81,8 +81,27 @@ void Vehicle::HandleADCs() {
 
 }
 
+uint8_t Vehicle::FaultCheck() { //checks if any fault states have tripped and puts statemachine into fault handling if tripped
+	uint8_t temp = 0;
+
+	if (fault & AMSFault) {     			//AMS
+		state = kFault;
+	}
+	if (fault & IMDFault) {     			//IMD
+		state = kFault;
+	}
+	if (fault & BSPDFault) {     			//BSPD
+		state = kFault;
+	}
+
+	//IMD
+
+	//AMS
+	return fault;
+}
+
 void Vehicle::FSM() {
-	HandleADCs();
+	FaultCheck();
 	switch (state) {
 		case kInit:
 
@@ -157,7 +176,7 @@ void Vehicle::FSM() {
 			break;
 		case kDelayR:
 			if ((dashInputs & revButton) && (timerDoneFlag & VT_SM_R)) {
-				timerDoneFlag = 0;//replace for multiple timers running at once
+				timerDoneFlag = 0; //replace for multiple timers running at once
 				state = kReverse;
 				printf3("kREV\n");
 			} else if (dashInputs & revButton) {
@@ -173,14 +192,17 @@ void Vehicle::FSM() {
 				state = kReverse;
 			} else {
 				state = kForward;
-				timerStartFlag = 0;//replace for multiple timers running at once
+				timerStartFlag = 0; //replace for multiple timers running at once
 				printf3("kFORWARD\n");
 			}
+			break;
+		case kFault:
+			printf("Fault AF\n");
+			state = kFault;
 			break;
 		default:
 			printf("FSM FUCKED\n");
 			state = kInit;
 			break;
 	}
-
 }
