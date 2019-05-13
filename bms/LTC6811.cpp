@@ -1,109 +1,115 @@
 #include "LTC6811.h"
+
 #include "chprintf.h"
 
-constexpr uint16_t LTC6811::crc15Table[256];
+#include "LTC6811Bus.h"
 
-LTC6811::Command LTC6811::buildCommand(AddressingMode addrMode, uint8_t addr,
-                                       CommandCode cmd) {
-  Command out;
-
-  out.addrMode = (uint8_t)addrMode;
-  out.address = (uint8_t)(addrMode == AddressingMode::kAddress ? addr : 0);
-  out.command = (uint16_t)cmd;
-
-  return out;
+LTC6811::LTC6811(LTC6811Bus &bus, uint8_t id) : m_bus(bus), m_id(id) {
+  m_config =
+      Configuration{.gpio5 = GPIOOutputState::kPullDown,
+                    .gpio4 = GPIOOutputState::kPullDown,
+                    .gpio3 = GPIOOutputState::kPullDown,
+                    .gpio2 = GPIOOutputState::kPullDown,
+                    .gpio1 = GPIOOutputState::kPullDown,
+                    .referencePowerOff = ReferencePowerOff::kAfterConversions,
+                    .dischargeTimerEnabled = DischargeTimerEnable::kDisabled,
+                    .adcMode = AdcModeOption::kDefault,
+                    .undervoltageComparison = 0,
+                    .overvoltageComparison = 0,
+                    .dischargeState = {.value = 0},
+                    .dischargeTimeout = DischargeTimeoutValue::kDisabled};
 }
 
-LTC6811::Command LTC6811::buildBroadcastCommand(CommandCode cmd) {
-  return Command{.command = (uint16_t)cmd};
+void LTC6811::updateConfig() {
+  // Create configuration data to write
+  uint8_t config[6];
+  config[0] =
+      (uint8_t)m_config.gpio5 << 7 | (uint8_t)m_config.gpio4 << 6 |
+      (uint8_t)m_config.gpio3 << 5 | (uint8_t)m_config.gpio2 << 4 |
+      (uint8_t)m_config.gpio1 << 3 | (uint8_t)m_config.referencePowerOff << 2 |
+      (uint8_t)m_config.dischargeTimerEnabled << 1 | (uint8_t)m_config.adcMode;
+  config[1] = m_config.undervoltageComparison & 0xFF;
+  config[2] = ((m_config.overvoltageComparison & 0x0F) << 4) |
+              ((m_config.undervoltageComparison << 8) & 0x0F);
+  config[3] = (m_config.overvoltageComparison << 4) & 0xFF;
+  config[4] = m_config.dischargeState.value & 0xFF;
+  config[5] = (((uint8_t)m_config.dischargeTimeout & 0x0F) << 4) |
+              ((m_config.dischargeState.value << 8) & 0x0F);
+
+  // config[0] = 0b11111000;
+
+  LTC6811Bus::Command cmd =
+      LTC6811Bus::buildAddressedCommand(m_id, WriteConfigurationGroupA());
+
+  m_bus.sendCommandWithData(cmd, config);
 }
 
-LTC6811::Command LTC6811::toCommand(uint8_t val[2]) {
-  return Command{.value = (uint16_t)((uint8_t)val[0] << 8 | (uint8_t)val[1])};
-}
+LTC6811::Configuration &LTC6811::getConfig() { return m_config; }
 
-LTC6811::Command LTC6811::toCommand(uint16_t val) {
-  return Command{.value = val};
-}
+uint16_t *LTC6811::getVoltages() {
+  auto cmd = StartCellVoltageADC(AdcMode::k7k, false, CellSelection::kAll);
+  m_bus.sendCommand(LTC6811Bus::buildAddressedCommand(m_id, cmd));
 
-LTC6811::LTC6811(SPIDriver *spiDriver, SPIConfig *spiConfig, uint8_t id)
-    : m_spiDriver(spiDriver), m_spiConfig(spiConfig), m_id(id) {}
+  // Wait 2 ms for ADC to finish
+  chThdSleepMilliseconds(2);
 
-void LTC6811::acquireSpi() {
-  spiAcquireBus(m_spiDriver);
-  spiStart(m_spiDriver, m_spiConfig);
-  spiSelect(m_spiDriver);
-}
+  // 4  * (Register of 6 Bytes + PEC)
+  uint8_t rxbuf[8 * 4];
 
-void LTC6811::releaseSpi() {
-  spiUnselect(m_spiDriver);
-  spiReleaseBus(m_spiDriver);
-}
+  m_bus.readCommand(
+      LTC6811Bus::buildAddressedCommand(m_id, ReadCellVoltageGroupA()), rxbuf);
+  m_bus.readCommand(
+      LTC6811Bus::buildAddressedCommand(m_id, ReadCellVoltageGroupB()),
+      rxbuf + 8);
+  m_bus.readCommand(
+      LTC6811Bus::buildAddressedCommand(m_id, ReadCellVoltageGroupC()),
+      rxbuf + 16);
+  m_bus.readCommand(
+      LTC6811Bus::buildAddressedCommand(m_id, ReadCellVoltageGroupD()),
+      rxbuf + 24);
 
-void LTC6811::wakeupSpi() {
-  acquireSpi();
-  releaseSpi();
-}
+  // Voltage = val • 100μV
+  uint16_t *voltages = new uint16_t[12];
+  for (int i = 0; i < sizeof(rxbuf); i++) {
+    // Skip over PEC
+    if (i % 8 == 6 || i % 8 == 7) continue;
 
-void LTC6811::sendCommand(Command txCmd) {
-  uint16_t cmdPec = calculatePec(2, txCmd.valueArr);
-  uint8_t cmd[4] = {txCmd.valueArr[0], txCmd.valueArr[1],
-                    (uint8_t)(cmdPec >> 8), (uint8_t)(cmdPec)};
+    // Skip over odd bytes
+    if (i % 2 == 1) continue;
 
-  acquireSpi();
-  spiSend(m_spiDriver, 4, cmd);
-  releaseSpi();
-}
-
-void LTC6811::sendCommandWithData(Command txCmd, uint8_t txData[6]) {
-  uint16_t cmdPec = calculatePec(2, txCmd.valueArr);
-  uint8_t cmd[4] = {txCmd.valueArr[0], txCmd.valueArr[1],
-                    (uint8_t)(cmdPec >> 8), (uint8_t)(cmdPec)};
-
-  uint8_t data[8];
-  for (int i = 0; i < 6; i++) {
-    data[i] = txData[i];
+    // Wack shit to skip over PEC
+    voltages[(i / 2) - (i / 8)] =
+        ((uint16_t)rxbuf[i]) | ((uint16_t)rxbuf[i + 1] << 8);
   }
-  uint16_t dataPec = calculatePec(6, txData);
-  data[6] = (uint8_t)(dataPec >> 8);
-  data[7] = (uint8_t)(dataPec);
 
-  acquireSpi();
-  spiSend(m_spiDriver, 4, cmd);
-  spiSend(m_spiDriver, 8, data);
-  releaseSpi();
+  return voltages;
 }
 
-void LTC6811::readCommand(Command txCmd, uint8_t *rxbuf) {
-  uint16_t cmdPec = calculatePec(2, txCmd.valueArr);
-  uint8_t cmd[4] = {txCmd.valueArr[0], txCmd.valueArr[1],
-                    (uint8_t)(cmdPec >> 8), (uint8_t)(cmdPec)};
+uint16_t *LTC6811::getGpio() {
+  auto cmd = StartGpioADC(AdcMode::k7k, GpioSelection::kAll);
+  m_bus.sendCommand(LTC6811Bus::buildAddressedCommand(m_id, cmd));
 
-  acquireSpi();
-  spiSend(m_spiDriver, 4, cmd);
-  spiReceive(m_spiDriver, 8, rxbuf);
-  releaseSpi();
+  uint8_t rxbuf[8 * 2];
 
-  uint16_t dataPec = calculatePec(6, rxbuf);
-  bool goodPec =
-      ((uint8_t)(dataPec >> 8)) == rxbuf[6] && ((uint8_t)dataPec) == rxbuf[7];
-  if (!goodPec) {
-    // TODO: return error or throw out read result
-    chprintf((BaseSequentialStream *)&SD2,
-             "ERR: Bad PEC on read. Computed: 0x%x. Actual: 0x%x\r\n", dataPec,
-             (uint16_t)(rxbuf[6] << 8 | rxbuf[7]));
+  m_bus.readCommand(
+      LTC6811Bus::buildAddressedCommand(m_id, ReadAuxiliaryGroupA()), rxbuf);
+  m_bus.readCommand(
+      LTC6811Bus::buildAddressedCommand(m_id, ReadAuxiliaryGroupB()),
+      rxbuf + 8);
+
+  uint16_t *voltages = new uint16_t[5];
+
+  for (int i = 0; i < sizeof(rxbuf); i++) {
+    // Skip over PEC
+    if (i % 8 == 6 || i % 8 == 7) continue;
+
+    // Skip over odd bytes
+    if (i % 2 == 1) continue;
+
+    // Wack shit to skip over PEC
+    voltages[(i / 2) - (i / 8)] =
+        ((uint16_t)rxbuf[i]) | ((uint16_t)rxbuf[i + 1] << 8);
   }
-}
 
-uint16_t LTC6811::calculatePec(uint8_t length, uint8_t *data) {
-  uint16_t remainder = 16;
-  uint16_t addr;
-
-  for (uint8_t i = 0; i < length; i++) {
-    // Calculate pec table address
-    addr = ((remainder >> 7) ^ data[i]) & 0xff;
-
-    remainder = (remainder << 8) ^ crc15Table[addr];
-  }
-  return (remainder << 1);
+  return voltages;
 }

@@ -15,7 +15,7 @@ endif
 
 # C++ specific options here (added to USE_OPT).
 ifeq ($(USE_CPPOPT),)
-  USE_CPPOPT = -fno-rtti
+  USE_CPPOPT = -fno-exceptions -fno-rtti -std=c++17
 endif
 
 # Enable this if you want the linker to remove unused code and data.
@@ -89,10 +89,11 @@ PROJECT = fs-1-bms
 MCU  = cortex-m4
 
 # Imported source files and paths.
-CHIBIOS  := ../ChibiOS
-CONFDIR  := ./cfg
-BUILDDIR := ./build
-DEPDIR   := ./.dep
+CHIBIOS   := ../ChibiOS
+COMMONDIR := ../common
+CONFDIR   := ./cfg
+BUILDDIR  := ./build
+DEPDIR    := ./.dep
 
 # Licensing files.
 include $(CHIBIOS)/os/license/license.mk
@@ -132,6 +133,7 @@ ASMXSRC = $(ALLXASMSRC)
 
 # Inclusion directories.
 INCDIR = $(CONFDIR) \
+	 $(COMMONDIR) \
 	 $(ALLINC)
 
 

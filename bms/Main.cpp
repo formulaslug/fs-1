@@ -1,98 +1,129 @@
+#include <functional>
 #include <initializer_list>
-#include "LTC6811.h"
+#include <vector>
+
 #include "ch.hpp"
-#include "chprintf.h"
 #include "hal.h"
+
+#include "chprintf.h"
+
+#include "LTC6811.h"
+#include "LTC6811Bus.h"
+
+#include "LTC6811Commands.h"
+#include "common.h"
 
 using namespace chibios_rt;
 
-// Thread to run SPI IO and report back over serial
-// NOTE: SpiThread is primarily for testing
-class SpiThread : public BaseStaticThread<256> {
+class BMSThread : public BaseStaticThread<1024> {
  public:
-  SpiThread() {}
+  BMSThread(LTC6811Bus* bus, unsigned int frequency) : m_bus(bus) {
+    m_delay = 1000 / frequency;
+    for (int i = 0; i < NUM_CHIPS; i++) {
+      m_chips.push_back(LTC6811(*bus, i));
+    }
+    for (int i = 0; i < NUM_CHIPS; i++) {
+      m_chips[i].getConfig().gpio5 = LTC6811::GPIOOutputState::kHigh;
+      // m_chips[i].updateConfig();
+    }
+  }
+
+  void getValues() {}
+
+ private:
+  unsigned int m_delay;
+  LTC6811Bus* m_bus;
+  std::vector<LTC6811> m_chips;
+
+  const LTC6811Bus::Command startAdc = LTC6811Bus::buildBroadcastCommand(
+      StartCellVoltageADC(AdcMode::k7k, false, CellSelection::kAll));
+  const LTC6811Bus::Command readStatusGroup =
+      LTC6811Bus::buildAddressedCommand(0, ReadConfigurationGroupA());
+
+  static constexpr unsigned int NUM_CHIPS = 1;  // TODO: change to 4
+
+  static constexpr unsigned int NUM_TEMP = 7;
 
  protected:
-  virtual void main(void) {
-    setName("SPI thread");
+  void main() {
+    while (!shouldTerminate()) {
+      for (int i = 0; i < NUM_CHIPS; i++) {
+        LTC6811::Configuration& conf = m_chips[i].getConfig();
+        conf.gpio5 = LTC6811::GPIOOutputState::kLow;
+        conf.gpio1 = LTC6811::GPIOOutputState::kPullDown;
+        m_chips[i].updateConfig();
 
-    uint16_t cr1 = SPI_CR1_BR_2 | SPI_CR1_BR_1;                 // prescalar 128
-    uint16_t cr2 = SPI_CR2_DS_2 | SPI_CR2_DS_1 | SPI_CR2_DS_0;  // Data width 8
-    SPIConfig spiConf = SPIConfig{false, NULL, GPIOA, 4, cr1, cr2};
+        continue;  // TODO: this skips the rest of this for testing
 
-    // Set pin modes for SPI
-    // MOSI
-    palSetPadMode(GPIOA, 7, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST);
-    // MISO
-    palSetPadMode(GPIOA, 6, PAL_MODE_ALTERNATE(5));
-    // SCK
-    palSetPadMode(GPIOA, 5, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST);
-    // NSS
-    palSetPadMode(GPIOA, 4, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST);
+        uint8_t rxbuf[6];
 
-    LTC6811 chip0 = LTC6811(&SPID1, &spiConf, 0);
+        m_bus->readCommand(readStatusGroup, rxbuf);
+        chprintf((BaseSequentialStream*)&SD2, "Voltages: \r\n");
+        for (int i = 0; i < 6; i++) {
+          chprintf((BaseSequentialStream*)&SD2, "0x%02x ", rxbuf[i]);
+        }
+        chprintf((BaseSequentialStream*)&SD2, "\r\n");
 
-    // Initialize serial for logging
-    const SerialConfig serialConf = {
-        115200, /* baud rate */
-        0,      /* cr1 */
-        0,      /* cr2 */
-        0       /* cr3 */
-    };
-    sdStart(&SD2, &serialConf);
-    sdWrite(&SD2, (const uint8_t*)"Init Serial\r\n", 13);
+        // Skip rest
+        continue;
 
-    // TODO: Change to nicer constructing
-    LTC6811::Command readVoltageA =
-        LTC6811::buildCommand(LTC6811::AddressingMode::kAddress, 0,
-                              LTC6811::CommandCode::kReadVoltageA);
-    LTC6811::Command readVoltageB = LTC6811::Command{.value = 0x8006};
-    LTC6811::Command readVoltageC = LTC6811::Command{.value = 0x8008};
-    LTC6811::Command readVoltageD = LTC6811::Command{.value = 0x800A};
+        uint16_t* voltages = m_chips[i].getVoltages();
 
-    LTC6811::Command startAdc = LTC6811::Command{.value = 0x0360};
+        // Process voltages
+        chprintf((BaseSequentialStream*)&SD2, "Voltages: \r\n");
+        for (int i = 0; i < 12; i++) {
+          chprintf((BaseSequentialStream*)&SD2, "0x%02x ", voltages[i]);
+        }
+        chprintf((BaseSequentialStream*)&SD2, "\r\n");
+        delete voltages;
 
-    LTC6811::Command writeConfA = LTC6811::Command{.value = 0x0001};
+        // Measure all temp sensors
+        for (int j = 0; j < NUM_TEMP; j++) {
+          conf.gpio1 = (j & 0x01) != 0 ? LTC6811::GPIOOutputState::kHigh
+                                       : LTC6811::GPIOOutputState::kLow;
+          conf.gpio2 = (j & 0x02) != 0 ? LTC6811::GPIOOutputState::kHigh
+                                       : LTC6811::GPIOOutputState::kLow;
+          conf.gpio3 = (j & 0x04) != 0 ? LTC6811::GPIOOutputState::kHigh
+                                       : LTC6811::GPIOOutputState::kLow;
+          m_chips[i].updateConfig();
 
-    // Config tables to disable and enable GPIO pins
-    uint8_t data0[] = {0x04, 0x00, 0x00, 0x00, 0x00, 0x00};
-    uint8_t data1[] = {0xFC, 0x00, 0x00, 0x00, 0x00, 0x00};
+          uint16_t* temps = m_chips[i].getGpio();
 
-    uint8_t rxbuf[32];
+          chprintf((BaseSequentialStream*)&SD2, "Temp %d: 0x%02x\r\n", j,
+                   temps[3]);
 
-    while (1) {
-      // Read and print voltage values
-      chip0.wakeupSpi();
-      chip0.sendCommand(startAdc);
-      sleep(2);
-      chip0.readCommand(readVoltageA, rxbuf);
-      chip0.readCommand(readVoltageB, rxbuf + 8);
-      chip0.readCommand(readVoltageC, rxbuf + 16);
-      chip0.readCommand(readVoltageD, rxbuf + 24);
+          delete temps;
+        }
 
-      chprintf((BaseSequentialStream*)&SD2, "Response: \r\n");
-      for (int i = 0; i < 32; i++) {
-        chprintf((BaseSequentialStream*)&SD2, "0x%02x ", rxbuf[i]);
-        if ((i + 1) % 8 == 0) chprintf((BaseSequentialStream*)&SD2, "\r\n");
+        conf.gpio5 = LTC6811::GPIOOutputState::kPassive;
+        m_chips[i].updateConfig();
       }
-
-      // Set GPIO pins to open drain
-      chip0.wakeupSpi();
-      chip0.sendCommandWithData(writeConfA, data0);
-
-      sleep(1500);
-
-      // Set GPIO pins to off
-      chip0.wakeupSpi();
-      chip0.sendCommandWithData(writeConfA, data1);
-
-      sleep(1500);
+      chprintf((BaseSequentialStream*)&SD2, "Sleeping...\r\n");
+      sleep(m_delay);
     }
   }
 };
 
-// Static thread objects
-static SpiThread spiThread;
+class KeepAliveThread : public BaseStaticThread<256> {
+ public:
+  // Frequency in Hz
+  KeepAliveThread(LTC6811Bus* bus, unsigned int frequency) : m_bus(bus) {
+    m_delay = 1000 / frequency;
+  }
+
+ private:
+  unsigned int m_delay;
+  LTC6811Bus* m_bus;
+
+ protected:
+  void main() {
+    while (!shouldTerminate()) {
+      m_bus->wakeupSpi();
+      chprintf((BaseSequentialStream*)&SD2, "Sleeping...\r\n");
+      chThdSleepMilliseconds(m_delay);
+    }
+  }
+};
 
 int main() {
   /*
@@ -105,8 +136,44 @@ int main() {
   halInit();
   System::init();
 
+  const SerialConfig serialConf = {
+      115200, /* baud rate */
+      0,      /* cr1 */
+      0,      /* cr2 */
+      0       /* cr3 */
+  };
+  sdStart(&SD2, &serialConf);
+  sdWrite(&SD2, (const uint8_t*)"Init Serial\r\n", 13);
+
+  // Set pin modes for SPI
+  // MOSI
+  palSetPadMode(GPIOA, 7, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST);
+  // MISO
+  palSetPadMode(GPIOA, 6, PAL_MODE_ALTERNATE(5));
+  // SCK
+  palSetPadMode(GPIOA, 5, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST);
+  // NSS
+  palSetPadMode(GPIOA, 4, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST);
+  palSetPad(GPIOA, 4);
+
+  uint16_t cr1 = SPI_CR1_BR_2 | SPI_CR1_BR_1;                 // prescalar 128
+  uint16_t cr2 = SPI_CR2_DS_2 | SPI_CR2_DS_1 | SPI_CR2_DS_0;  // Data width 8
+  SPIConfig* spiConf = new SPIConfig{false, NULL, GPIOA, 4, cr1, cr2};
+
+  LTC6811Bus ltcBus = LTC6811Bus(&SPID1, spiConf);
+
+  KeepAliveThread keepAliveThd(&ltcBus, 10);
+  // keepAliveThd.start(NORMALPRIO + 1);
+
+  BMSThread bmsThread(&ltcBus, 1);
+  bmsThread.start(NORMALPRIO + 1);
+
+  uint8_t txbuf[2] = {0x00, 0x01};
+  uint8_t databuf[6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+  // ltcBus.sendData(txbuf, databuf);
   // Start main spi thread
-  spiThread.start(NORMALPRIO + 1);
+  // bms.start(NORMALPRIO + 2);
+  // Initialize serial for logging
 
   // Flash LEDs to indicate startup
   for (int i = 0; i < 4; i++) {
@@ -119,6 +186,7 @@ int main() {
   while (1) {
     // Sleep 24 hours
     // NOTE: This could be a much smaller value
-    chThdSleepMilliseconds(1000 * 60 * 60 * 24);
+    // ltcBus.sendData(txbuf, databuf);
+    chThdSleepMilliseconds(100);
   }
 }
