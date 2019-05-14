@@ -145,16 +145,15 @@ int main() {
   sdStart(&SD2, &serialConf);
   sdWrite(&SD2, (const uint8_t*)"Init Serial\r\n", 13);
 
-  // Set pin modes for SPI
   // MOSI
-  palSetPadMode(GPIOA, 7, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST);
-  // MISO
-  palSetPadMode(GPIOA, 6, PAL_MODE_ALTERNATE(5));
-  // SCK
-  palSetPadMode(GPIOA, 5, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST);
-  // NSS
-  palSetPadMode(GPIOA, 4, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST);
-  palSetPad(GPIOA, 4);
+  	palSetPadMode(GPIOA, 7, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST);
+  	// MISO
+  	palSetPadMode(GPIOA, 6, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST);
+  	// SCLK
+  	palSetPadMode(GPIOA, 5, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST);
+  	// SSEL
+  	palSetPadMode(GPIOA, 4, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_HIGHEST);
+//  palSetPad(GPIOA, 4);
 
   uint16_t cr1 = SPI_CR1_BR_2 | SPI_CR1_BR_1;                 // prescalar 128
   uint16_t cr2 = SPI_CR2_DS_2 | SPI_CR2_DS_1 | SPI_CR2_DS_0;  // Data width 8
