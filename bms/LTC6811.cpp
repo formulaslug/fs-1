@@ -6,11 +6,11 @@
 
 LTC6811::LTC6811(LTC6811Bus &bus, uint8_t id) : m_bus(bus), m_id(id) {
   m_config =
-      Configuration{.gpio5 = GPIOOutputState::kPullDown,
-                    .gpio4 = GPIOOutputState::kPullDown,
-                    .gpio3 = GPIOOutputState::kPullDown,
-                    .gpio2 = GPIOOutputState::kPullDown,
-                    .gpio1 = GPIOOutputState::kPullDown,
+      Configuration{.gpio5 = GPIOOutputState::kPassive,
+                    .gpio4 = GPIOOutputState::kPassive,
+                    .gpio3 = GPIOOutputState::kPassive,
+                    .gpio2 = GPIOOutputState::kPassive,
+                    .gpio1 = GPIOOutputState::kPassive,
                     .referencePowerOff = ReferencePowerOff::kAfterConversions,
                     .dischargeTimerEnabled = DischargeTimerEnable::kDisabled,
                     .adcMode = AdcModeOption::kDefault,
@@ -35,8 +35,6 @@ void LTC6811::updateConfig() {
   config[4] = m_config.dischargeState.value & 0xFF;
   config[5] = (((uint8_t)m_config.dischargeTimeout & 0x0F) << 4) |
               ((m_config.dischargeState.value << 8) & 0x0F);
-
-  // config[0] = 0b11111000;
 
   LTC6811Bus::Command cmd =
       LTC6811Bus::buildAddressedCommand(m_id, WriteConfigurationGroupA());

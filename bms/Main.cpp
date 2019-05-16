@@ -23,7 +23,12 @@ class BMSThread : public BaseStaticThread<1024> {
       m_chips.push_back(LTC6811(*bus, i));
     }
     for (int i = 0; i < NUM_CHIPS; i++) {
-      m_chips[i].getConfig().gpio5 = LTC6811::GPIOOutputState::kHigh;
+      m_chips[i].getConfig().gpio5 = LTC6811::GPIOOutputState::kLow;
+      m_chips[i].getConfig().gpio4 = LTC6811::GPIOOutputState::kPassive;
+
+      // NOTE: following line causes crash because spi driver has not been
+      // initialized yet
+
       // m_chips[i].updateConfig();
     }
   }
@@ -35,13 +40,7 @@ class BMSThread : public BaseStaticThread<1024> {
   LTC6811Bus* m_bus;
   std::vector<LTC6811> m_chips;
 
-  const LTC6811Bus::Command startAdc = LTC6811Bus::buildBroadcastCommand(
-      StartCellVoltageADC(AdcMode::k7k, false, CellSelection::kAll));
-  const LTC6811Bus::Command readStatusGroup =
-      LTC6811Bus::buildAddressedCommand(0, ReadConfigurationGroupA());
-
   static constexpr unsigned int NUM_CHIPS = 1;  // TODO: change to 4
-
   static constexpr unsigned int NUM_TEMP = 7;
 
  protected:
@@ -50,22 +49,7 @@ class BMSThread : public BaseStaticThread<1024> {
       for (int i = 0; i < NUM_CHIPS; i++) {
         LTC6811::Configuration& conf = m_chips[i].getConfig();
         conf.gpio5 = LTC6811::GPIOOutputState::kLow;
-        conf.gpio1 = LTC6811::GPIOOutputState::kPullDown;
         m_chips[i].updateConfig();
-
-        continue;  // TODO: this skips the rest of this for testing
-
-        uint8_t rxbuf[6];
-
-        m_bus->readCommand(readStatusGroup, rxbuf);
-        chprintf((BaseSequentialStream*)&SD2, "Voltages: \r\n");
-        for (int i = 0; i < 6; i++) {
-          chprintf((BaseSequentialStream*)&SD2, "0x%02x ", rxbuf[i]);
-        }
-        chprintf((BaseSequentialStream*)&SD2, "\r\n");
-
-        // Skip rest
-        continue;
 
         uint16_t* voltages = m_chips[i].getVoltages();
 
@@ -88,18 +72,18 @@ class BMSThread : public BaseStaticThread<1024> {
           m_chips[i].updateConfig();
 
           uint16_t* temps = m_chips[i].getGpio();
+          int temp = temps[3] / 10;
 
-          chprintf((BaseSequentialStream*)&SD2, "Temp %d: 0x%02x\r\n", j,
-                   temps[3]);
+          chprintf((BaseSequentialStream*)&SD2, "Temp %d: %dmV\r\n", j, temp);
 
           delete temps;
         }
 
-        conf.gpio5 = LTC6811::GPIOOutputState::kPassive;
+        conf.gpio5 = LTC6811::GPIOOutputState::kHigh;
         m_chips[i].updateConfig();
       }
       chprintf((BaseSequentialStream*)&SD2, "Sleeping...\r\n");
-      sleep(m_delay);
+      chThdSleepMilliseconds(m_delay);
     }
   }
 };
@@ -136,6 +120,7 @@ int main() {
   halInit();
   System::init();
 
+  // Initialize serial for logging
   const SerialConfig serialConf = {
       115200, /* baud rate */
       0,      /* cr1 */
@@ -143,17 +128,17 @@ int main() {
       0       /* cr3 */
   };
   sdStart(&SD2, &serialConf);
-  sdWrite(&SD2, (const uint8_t*)"Init Serial\r\n", 13);
+  sdWrite(&SD2, (const uint8_t*)"Serial Init\r\n", 13);
 
   // MOSI
-  	palSetPadMode(GPIOA, 7, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST);
-  	// MISO
-  	palSetPadMode(GPIOA, 6, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST);
-  	// SCLK
-  	palSetPadMode(GPIOA, 5, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST);
-  	// SSEL
-  	palSetPadMode(GPIOA, 4, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_HIGHEST);
-//  palSetPad(GPIOA, 4);
+  palSetPadMode(GPIOA, 7, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST);
+  // MISO
+  palSetPadMode(GPIOA, 6, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST);
+  // SCLK
+  palSetPadMode(GPIOA, 5, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST);
+  // SSEL
+  palSetPadMode(GPIOA, 4, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_HIGHEST);
+  //  palSetPad(GPIOA, 4);
 
   uint16_t cr1 = SPI_CR1_BR_2 | SPI_CR1_BR_1;                 // prescalar 128
   uint16_t cr2 = SPI_CR2_DS_2 | SPI_CR2_DS_1 | SPI_CR2_DS_0;  // Data width 8
@@ -166,13 +151,6 @@ int main() {
 
   BMSThread bmsThread(&ltcBus, 1);
   bmsThread.start(NORMALPRIO + 1);
-
-  uint8_t txbuf[2] = {0x00, 0x01};
-  uint8_t databuf[6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-  // ltcBus.sendData(txbuf, databuf);
-  // Start main spi thread
-  // bms.start(NORMALPRIO + 2);
-  // Initialize serial for logging
 
   // Flash LEDs to indicate startup
   for (int i = 0; i < 4; i++) {

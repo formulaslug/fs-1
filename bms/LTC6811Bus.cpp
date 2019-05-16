@@ -49,9 +49,11 @@ void LTC6811Bus::send(uint8_t txCmd[2]) {
   uint8_t cmd[4] = {txCmd[1], txCmd[0], (uint8_t)(cmdPec >> 8),
                     (uint8_t)(cmdPec)};
 
+#if DEBUG
   for (int i = 0; i < 4; i++) {
     chprintf((BaseSequentialStream *)&SD2, "CMD: %d: 0x%x\r\n", i, cmd[i]);
   }
+#endif
 
   acquireSpi();
   spiSend(m_spiDriver, 4, cmd);
@@ -71,12 +73,14 @@ void LTC6811Bus::sendData(uint8_t txCmd[2], uint8_t txData[6]) {
   data[6] = (uint8_t)(dataPec >> 8);
   data[7] = (uint8_t)(dataPec);
 
+#if DEBUG
   for (int i = 0; i < 4; i++) {
     chprintf((BaseSequentialStream *)&SD2, "CMD: %d: 0x%x\r\n", i, cmd[i]);
   }
   for (int i = 0; i < 8; i++) {
     chprintf((BaseSequentialStream *)&SD2, "Byte: %d: 0x%x\r\n", i, data[i]);
   }
+#endif
 
   acquireSpi();
   spiSend(m_spiDriver, 4, cmd);
@@ -109,6 +113,7 @@ void LTC6811Bus::sendCommandWithData(Command txCmd, uint8_t txData[6]) {
   data[6] = (uint8_t)(dataPec >> 8);
   data[7] = (uint8_t)(dataPec);
 
+#if DEBUG
   // TODO: fix
   for (int i = 0; i < 4; i++) {
     chprintf((BaseSequentialStream *)&SD2, "CMD: %d: 0x%x\r\n", i, cmd[i]);
@@ -117,6 +122,7 @@ void LTC6811Bus::sendCommandWithData(Command txCmd, uint8_t txData[6]) {
     chprintf((BaseSequentialStream *)&SD2, "Byte: %d: 0x%x\r\n", i, data[i]);
   }
   chprintf((BaseSequentialStream *)&SD2, "pec: 0x%x\r\n", dataPec);
+#endif
 
   acquireSpi();
   spiSend(m_spiDriver, 4, cmd);
@@ -129,10 +135,12 @@ void LTC6811Bus::readCommand(Command txCmd, uint8_t *rxbuf) {
   uint16_t cmdPec = calculatePec(2, cmdCode);
   uint8_t cmd[4] = {cmdCode[0], cmdCode[1], (uint8_t)(cmdPec >> 8),
                     (uint8_t)(cmdPec)};
+#if DEBUG
   // TODO: fix
   for (int i = 0; i < 4; i++) {
     chprintf((BaseSequentialStream *)&SD2, "CMD: %d: 0x%x\r\n", i, cmd[i]);
   }
+#endif
 
   acquireSpi();
   spiSend(m_spiDriver, 4, cmd);
