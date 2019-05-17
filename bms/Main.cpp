@@ -56,7 +56,8 @@ class BMSThread : public BaseStaticThread<1024> {
         // Process voltages
         chprintf((BaseSequentialStream*)&SD2, "Voltages: \r\n");
         for (int i = 0; i < 12; i++) {
-          chprintf((BaseSequentialStream*)&SD2, "0x%02x ", voltages[i]);
+          int voltage = voltages[i] / 10;
+          chprintf((BaseSequentialStream*)&SD2, "%dmV ", voltage);
         }
         chprintf((BaseSequentialStream*)&SD2, "\r\n");
         delete voltages;
@@ -82,7 +83,6 @@ class BMSThread : public BaseStaticThread<1024> {
         conf.gpio5 = LTC6811::GPIOOutputState::kHigh;
         m_chips[i].updateConfig();
       }
-      chprintf((BaseSequentialStream*)&SD2, "Sleeping...\r\n");
       chThdSleepMilliseconds(m_delay);
     }
   }
@@ -103,7 +103,6 @@ class KeepAliveThread : public BaseStaticThread<256> {
   void main() {
     while (!shouldTerminate()) {
       m_bus->wakeupSpi();
-      chprintf((BaseSequentialStream*)&SD2, "Sleeping...\r\n");
       chThdSleepMilliseconds(m_delay);
     }
   }
@@ -146,8 +145,8 @@ int main() {
 
   LTC6811Bus ltcBus = LTC6811Bus(&SPID1, spiConf);
 
-  KeepAliveThread keepAliveThd(&ltcBus, 10);
-  // keepAliveThd.start(NORMALPRIO + 1);
+  KeepAliveThread keepAliveThd(&ltcBus, 100);
+  keepAliveThd.start(NORMALPRIO + 1);
 
   BMSThread bmsThread(&ltcBus, 1);
   bmsThread.start(NORMALPRIO + 1);
@@ -161,9 +160,7 @@ int main() {
   }
 
   while (1) {
-    // Sleep 24 hours
-    // NOTE: This could be a much smaller value
-    // ltcBus.sendData(txbuf, databuf);
-    chThdSleepMilliseconds(100);
+    // Sleep 100 secs
+    chThdSleepMilliseconds(100 * 1000);
   }
 }

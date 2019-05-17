@@ -116,7 +116,7 @@ class StartCellVoltageADC : public LTC6811Command {
   bool dischargePermitted;
   CellSelection cellSelection;
   uint16_t toValue() const {
-    return 0x0160 | ((uint16_t)adcMode << 7) |
+    return 0x0260 | (((uint16_t)adcMode) << 7) |
            (dischargePermitted ? 0x0010 : 0x0000) | ((uint16_t)cellSelection);
   }
 };
@@ -127,7 +127,7 @@ class StartOpenWireADC : public LTC6811Command {
   bool dischargePermitted;
   CellSelection cellSelection;
   uint16_t toValue() const {
-    return 0x0128 | ((uint16_t)adcMode << 7) | ((uint16_t)pull << 6) |
+    return 0x0228 | ((uint16_t)adcMode << 7) | ((uint16_t)pull << 6) |
            (dischargePermitted ? 0x0010 : 0x0000) | ((uint16_t)cellSelection);
   }
 };
