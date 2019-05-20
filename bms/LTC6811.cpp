@@ -29,12 +29,12 @@ void LTC6811::updateConfig() {
       (uint8_t)m_config.gpio1 << 3 | (uint8_t)m_config.referencePowerOff << 2 |
       (uint8_t)m_config.dischargeTimerEnabled << 1 | (uint8_t)m_config.adcMode;
   config[1] = m_config.undervoltageComparison & 0xFF;
-  config[2] = ((m_config.overvoltageComparison & 0x0F) << 4) |
-              ((m_config.undervoltageComparison << 8) & 0x0F);
-  config[3] = (m_config.overvoltageComparison << 4) & 0xFF;
+  config[2] = ((m_config.undervoltageComparison >> 8) & 0x0F) |
+              (((uint8_t)m_config.overvoltageComparison & 0x0F) << 4);
+  config[3] = (m_config.overvoltageComparison >> 4) & 0xFF;
   config[4] = m_config.dischargeState.value & 0xFF;
   config[5] = (((uint8_t)m_config.dischargeTimeout & 0x0F) << 4) |
-              ((m_config.dischargeState.value << 8) & 0x0F);
+              ((m_config.dischargeState.value >> 8) & 0x0F);
 
   LTC6811Bus::Command cmd =
       LTC6811Bus::buildAddressedCommand(m_id, WriteConfigurationGroupA());
@@ -86,6 +86,41 @@ uint16_t *LTC6811::getVoltages() {
 uint16_t *LTC6811::getGpio() {
   auto cmd = StartGpioADC(AdcMode::k7k, GpioSelection::kAll);
   m_bus.sendCommand(LTC6811Bus::buildAddressedCommand(m_id, cmd));
+
+  // Wait 15 ms for ADC to finish
+  chThdSleepMilliseconds(15);
+
+  uint8_t rxbuf[8 * 2];
+
+  m_bus.readCommand(
+      LTC6811Bus::buildAddressedCommand(m_id, ReadAuxiliaryGroupA()), rxbuf);
+  m_bus.readCommand(
+      LTC6811Bus::buildAddressedCommand(m_id, ReadAuxiliaryGroupB()),
+      rxbuf + 8);
+
+  uint16_t *voltages = new uint16_t[5];
+
+  for (int i = 0; i < sizeof(rxbuf); i++) {
+    // Skip over PEC
+    if (i % 8 == 6 || i % 8 == 7) continue;
+
+    // Skip over odd bytes
+    if (i % 2 == 1) continue;
+
+    // Wack shit to skip over PEC
+    voltages[(i / 2) - (i / 8)] =
+        ((uint16_t)rxbuf[i]) | ((uint16_t)rxbuf[i + 1] << 8);
+  }
+
+  return voltages;
+}
+
+uint16_t *LTC6811::getGpioPin(GpioSelection pin) {
+  auto cmd = StartGpioADC(AdcMode::k7k, pin);
+  m_bus.sendCommand(LTC6811Bus::buildAddressedCommand(m_id, cmd));
+
+  // Wait 5 ms for ADC to finish
+  chThdSleepMilliseconds(pin == GpioSelection::kAll ? 15 : 5);
 
   uint8_t rxbuf[8 * 2];
 

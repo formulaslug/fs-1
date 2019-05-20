@@ -1,112 +1,22 @@
-#include <functional>
-#include <initializer_list>
-#include <vector>
-
 #include "ch.hpp"
 #include "hal.h"
 
 #include "chprintf.h"
 
-#include "LTC6811.h"
+#include "BmsThread.h"
 #include "LTC6811Bus.h"
 
-#include "LTC6811Commands.h"
 #include "common.h"
 
 using namespace chibios_rt;
 
-class BMSThread : public BaseStaticThread<1024> {
- public:
-  BMSThread(LTC6811Bus* bus, unsigned int frequency) : m_bus(bus) {
-    m_delay = 1000 / frequency;
-    for (int i = 0; i < NUM_CHIPS; i++) {
-      m_chips.push_back(LTC6811(*bus, i));
-    }
-    for (int i = 0; i < NUM_CHIPS; i++) {
-      m_chips[i].getConfig().gpio5 = LTC6811::GPIOOutputState::kLow;
-      m_chips[i].getConfig().gpio4 = LTC6811::GPIOOutputState::kPassive;
+// When car is off maybe one reading every 10 sec
+// when car is on 10 readings per second
 
-      // NOTE: following line causes crash because spi driver has not been
-      // initialized yet
-
-      // m_chips[i].updateConfig();
-    }
-  }
-
-  void getValues() {}
-
- private:
-  unsigned int m_delay;
-  LTC6811Bus* m_bus;
-  std::vector<LTC6811> m_chips;
-
-  static constexpr unsigned int NUM_CHIPS = 1;  // TODO: change to 4
-  static constexpr unsigned int NUM_TEMP = 7;
-
- protected:
-  void main() {
-    while (!shouldTerminate()) {
-      for (int i = 0; i < NUM_CHIPS; i++) {
-        LTC6811::Configuration& conf = m_chips[i].getConfig();
-        conf.gpio5 = LTC6811::GPIOOutputState::kLow;
-        m_chips[i].updateConfig();
-
-        uint16_t* voltages = m_chips[i].getVoltages();
-
-        // Process voltages
-        chprintf((BaseSequentialStream*)&SD2, "Voltages: \r\n");
-        for (int i = 0; i < 12; i++) {
-          int voltage = voltages[i] / 10;
-          chprintf((BaseSequentialStream*)&SD2, "%dmV ", voltage);
-        }
-        chprintf((BaseSequentialStream*)&SD2, "\r\n");
-        delete voltages;
-
-        // Measure all temp sensors
-        for (int j = 0; j < NUM_TEMP; j++) {
-          conf.gpio1 = (j & 0x01) != 0 ? LTC6811::GPIOOutputState::kHigh
-                                       : LTC6811::GPIOOutputState::kLow;
-          conf.gpio2 = (j & 0x02) != 0 ? LTC6811::GPIOOutputState::kHigh
-                                       : LTC6811::GPIOOutputState::kLow;
-          conf.gpio3 = (j & 0x04) != 0 ? LTC6811::GPIOOutputState::kHigh
-                                       : LTC6811::GPIOOutputState::kLow;
-          m_chips[i].updateConfig();
-
-          uint16_t* temps = m_chips[i].getGpio();
-          int temp = temps[3] / 10;
-
-          chprintf((BaseSequentialStream*)&SD2, "Temp %d: %dmV\r\n", j, temp);
-
-          delete temps;
-        }
-
-        conf.gpio5 = LTC6811::GPIOOutputState::kHigh;
-        m_chips[i].updateConfig();
-      }
-      chThdSleepMilliseconds(m_delay);
-    }
-  }
-};
-
-class KeepAliveThread : public BaseStaticThread<256> {
- public:
-  // Frequency in Hz
-  KeepAliveThread(LTC6811Bus* bus, unsigned int frequency) : m_bus(bus) {
-    m_delay = 1000 / frequency;
-  }
-
- private:
-  unsigned int m_delay;
-  LTC6811Bus* m_bus;
-
- protected:
-  void main() {
-    while (!shouldTerminate()) {
-      m_bus->wakeupSpi();
-      chThdSleepMilliseconds(m_delay);
-    }
-  }
-};
+// TODO: map 12 cells to number of cells
+// TODO: change m_chips to array rather than vector
+// TODO: publish fault states
+// TODO: SoC tracking using Ah counting and voltage measuring
 
 int main() {
   /*
@@ -144,9 +54,6 @@ int main() {
   SPIConfig* spiConf = new SPIConfig{false, NULL, GPIOA, 4, cr1, cr2};
 
   LTC6811Bus ltcBus = LTC6811Bus(&SPID1, spiConf);
-
-  KeepAliveThread keepAliveThd(&ltcBus, 100);
-  keepAliveThd.start(NORMALPRIO + 1);
 
   BMSThread bmsThread(&ltcBus, 1);
   bmsThread.start(NORMALPRIO + 1);

@@ -69,6 +69,7 @@ class LTC6811 {
 
   uint16_t *getVoltages();
   uint16_t *getGpio();
+  uint16_t *getGpioPin(GpioSelection pin);
 
  private:
   LTC6811Bus &m_bus;
