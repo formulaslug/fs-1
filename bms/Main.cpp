@@ -1,12 +1,14 @@
-#include "ch.hpp"
-#include "hal.h"
+#include "Main.h"
 
+#include "BmsConfig.h"
+#include "common.h"
+
+#include "ch.hpp"
 #include "chprintf.h"
+#include "hal.h"
 
 #include "BmsThread.h"
 #include "LTC6811Bus.h"
-
-#include "common.h"
 
 using namespace chibios_rt;
 
@@ -17,6 +19,18 @@ using namespace chibios_rt;
 // TODO: change m_chips to array rather than vector
 // TODO: publish fault states
 // TODO: SoC tracking using Ah counting and voltage measuring
+
+// Fault states:
+// - AMS
+// - IMD
+//
+// * Over temp
+// - Under temp
+// * Over voltage
+// * Under voltage
+//
+// * Failed init
+// * Comm fail
 
 int main() {
   /*
@@ -29,6 +43,9 @@ int main() {
   halInit();
   System::init();
 
+  // Init all io pins
+  initIO();
+
   // Initialize serial for logging
   const SerialConfig serialConf = {
       115200, /* baud rate */
@@ -39,21 +56,15 @@ int main() {
   sdStart(&SD2, &serialConf);
   sdWrite(&SD2, (const uint8_t*)"Serial Init\r\n", 13);
 
-  // MOSI
-  palSetPadMode(GPIOA, 7, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST);
-  // MISO
-  palSetPadMode(GPIOA, 6, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST);
-  // SCLK
-  palSetPadMode(GPIOA, 5, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST);
-  // SSEL
-  palSetPadMode(GPIOA, 4, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_HIGHEST);
-  //  palSetPad(GPIOA, 4);
+  // Init spi config
+  SPIConfig* spiConf = new SPIConfig{false /* Circular buffer */,
+                                     NULL /* Callback */,
+                                     PAL_PORT(LINE_SPI_SSEL) /* SSEL port */,
+                                     PAL_PAD(LINE_SPI_SSEL) /* SSEL pin */,
+                                     BMS_SPI_CR1 /* CR1 (prescalar) */,
+                                     BMS_SPI_CR2 /* CR2 (data width) */};
 
-  uint16_t cr1 = SPI_CR1_BR_2 | SPI_CR1_BR_1;                 // prescalar 128
-  uint16_t cr2 = SPI_CR2_DS_2 | SPI_CR2_DS_1 | SPI_CR2_DS_0;  // Data width 8
-  SPIConfig* spiConf = new SPIConfig{false, NULL, GPIOA, 4, cr1, cr2};
-
-  LTC6811Bus ltcBus = LTC6811Bus(&SPID1, spiConf);
+  LTC6811Bus ltcBus = LTC6811Bus(&BMS_SPI_DRIVER, spiConf);
 
   BMSThread bmsThread(&ltcBus, 1);
   bmsThread.start(NORMALPRIO + 1);
@@ -70,4 +81,25 @@ int main() {
     // Sleep 100 secs
     chThdSleepMilliseconds(100 * 1000);
   }
+}
+
+void initIO() {
+  // Set modes for IO
+  palSetLineMode(LINE_BMS_FLT, PAL_MODE_OUTPUT_PUSHPULL);
+  palSetLineMode(LINE_BMS_FLT_LAT, PAL_MODE_INPUT);
+  palSetLineMode(LINE_IMD_STATUS, PAL_MODE_INPUT);
+  palSetLineMode(LINE_IMD_FLT_LAT, PAL_MODE_INPUT);
+
+  // Clear output pins
+  palClearLine(LINE_BMS_FLT);
+
+  // Set modes for SPI
+  palSetLineMode(LINE_SPI_MISO,
+                 PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST);
+  palSetLineMode(LINE_SPI_MOSI,
+                 PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST);
+  palSetLineMode(LINE_SPI_SCLK,
+                 PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST);
+  palSetLineMode(LINE_SPI_SSEL,
+                 PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_HIGHEST);
 }

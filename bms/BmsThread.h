@@ -100,6 +100,12 @@ class BMSThread : public BaseStaticThread<1024> {
 
         chprintf((BaseSequentialStream*)&SD2, "Temperatures: ");
         for (unsigned int j = 0; j < BMS_BANK_TEMP_COUNT; j++) {
+          if (temperatures[j] >= BMS_FAULT_TEMP_THRESHOLD_HIGH) {
+            // Set fault line
+            palSetLine(LINE_BMS_FLT);
+            // TODO: Do this better
+          }
+
           chprintf((BaseSequentialStream*)&SD2, "%dC ",
                    convertTemp(temperatures[j] / 10));
         }
