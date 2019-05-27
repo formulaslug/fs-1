@@ -5,12 +5,12 @@
 #include <stdint.h>
 
 #include <vector>
-
+#include "mcuconfFs.h"
 #include "Event.h"
 #include "EventQueue.h"
-#include "Gpio.h"
 #include "ch.h"
 #include "hal.h"
+
 
 /**
  *
@@ -32,7 +32,6 @@ class AdcChSubsys {
    */
   bool addPin(Gpio pin);
 
-  bool removePin(Gpio pin);
 
   /**
    * ADC subsystem run function
@@ -44,7 +43,7 @@ class AdcChSubsys {
   void runThread();
 
  private:
-  static constexpr uint32_t kNumGpio = 2;
+  static constexpr uint32_t kNumGpio = 4;
   static constexpr uint32_t kMaxNumGpio = 4;
   static constexpr uint32_t kSampleBuffDepth = 8;
 

@@ -2,16 +2,11 @@
 
 #pragma once
 
-#include <stdint.h>
-
-#include <mutex>
-#include <vector>
-
 #include "CanBus.h"
-#include "Event.h"
-#include "EventQueue.h"
-#include "ch.h"
-#include "hal.h"
+
+
+
+
 
 /**
  *
@@ -40,4 +35,5 @@ class CanChSubsys {
   // @brief Inf loop that MUST be called within created static thread
   void runTxThread();
   void runRxThread();
+  void runThread();
 };

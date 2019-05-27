@@ -3,9 +3,20 @@
 #pragma once
 
 #include <initializer_list>
+#include <cmath>
+#include <cstdio>
+#include <vector>
+#include <stdint.h>
 
-#include "CircularBuffer.h"
 #include "hal.h"
+#include "ch.h"
+#include "CircularBuffer.h"
+#include "Event.h"
+#include "EventQueue.h"
+#include "mcuconfFs.h"
+//#include "fsprintf.h"
+//static auto printf3 = SDPrinter<&SD3>();
+
 
 enum class CanBusBaudRate : uint8_t {
   k125k,  // 125 kHz
@@ -18,11 +29,8 @@ enum class CanBusBaudRate : uint8_t {
 
 class CanBus {
  public:
-  CanBus(uint32_t id, CANDriver* canp, CanBusBaudRate baud, bool loopback);
+  CanBus(CANDriver* canp, CanBusBaudRate baud, bool loopback);
   virtual ~CanBus();
-
-  void setFilters(std::initializer_list<uint32_t> filters);
-  bool send(uint64_t data);
   bool send(const CANTxFrame& msg);
   bool recv(CANRxFrame& msg);
 

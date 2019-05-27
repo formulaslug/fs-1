@@ -8,10 +8,12 @@
 
 #include "Event.h"
 #include "EventQueue.h"
-#include "Gpio.h"
-#include "ch.h"
+#include "ch.hpp"
 #include "hal.h"
 #include "mcuconfFs.h"
+
+
+
 
 /**
  *
@@ -52,7 +54,7 @@ class DigInChSubsys {
   void runThread();
 
  private:
-  static constexpr uint16_t kMaxNumPins = 1;
+  static constexpr uint16_t kMaxNumPins = 4;
   uint16_t m_numPins = 0;
 
   // @note true if pin is registered, false otherwise
@@ -81,10 +83,10 @@ class DigInChSubsys {
    * @note Maps for constant-time lookup of attrs of the analog input
    */
   // map user's Gpio pin to a pin integer
-  uint32_t kPinMap[kMaxNumPins] = {TRI_STATE_SWITCH_UP_PIN};
+  uint32_t kPinMap[kMaxNumPins] = {TOGGLE_UP_PIN,TOGGLE_DOWN_PIN,DRIVE_MODE_PIN,BSPD_FAULT_PIN};
 
   // map user's Gpio pin to chibios port pointer
-  stm32_gpio_t* kPortMap[kMaxNumPins] = {TRI_STATE_SWITCH_UP_PORT};
+  stm32_gpio_t* kPortMap[kMaxNumPins] = {TOGGLE_UP_PORT, TOGGLE_DOWN_PORT, DRIVE_MODE_PORT,BSPD_FAULT_PORT};
 
   uint32_t getPinNum(DigitalInput p);
 

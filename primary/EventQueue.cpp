@@ -2,11 +2,6 @@
 
 #include "EventQueue.h"
 
-#include <stdint.h>
-
-#include <mutex>
-
-#include "hal.h"
 
 EventQueue::EventQueue() {}
 
