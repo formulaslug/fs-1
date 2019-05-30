@@ -83,6 +83,7 @@ void Vehicle::HandleADCs() {
 
 uint8_t Vehicle::FaultCheck() { //checks if any fault states have tripped and puts statemachine into fault handling if tripped
 	uint8_t temp = 0;
+	uint8_t fault = 0;
 
 	if (fault & AMSFault) {     			//AMS
 		state = kFault;

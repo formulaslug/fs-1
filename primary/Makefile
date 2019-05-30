@@ -87,6 +87,7 @@ PROJECT = fs-1-primary
 
 # Imported source files and paths
 CHIBIOS := ../ChibiOS
+COMMONDIR := ../common
 CONFDIR := ./cfg
 
 # Startup files.
@@ -128,7 +129,7 @@ ASMSRC = $(ALLASMSRC)
 ASMXSRC = $(ALLXASMSRC)
 
 # Inclusion directories.
-INCDIR = $(CONFDIR) $(ALLINC) $(TESTINC)
+INCDIR = $(CONFDIR) $(ALLINC) $(TESTINC) $(COMMONDIR)
 
 # Define C warning options here.
 CWARN = -Wall -Wextra -Wundef -Wstrict-prototypes
