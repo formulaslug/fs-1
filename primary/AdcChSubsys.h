@@ -5,12 +5,11 @@
 #include <stdint.h>
 
 #include <vector>
-#include "mcuconfFs.h"
 #include "Event.h"
 #include "EventQueue.h"
 #include "ch.h"
 #include "hal.h"
-
+#include "mcuconfFs.h"
 
 /**
  *
@@ -31,7 +30,6 @@ class AdcChSubsys {
    * @param samplingFrequency sampling frequency of pin in Hz
    */
   bool addPin(Gpio pin);
-
 
   /**
    * ADC subsystem run function

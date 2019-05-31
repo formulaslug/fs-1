@@ -2,8 +2,6 @@
 
 #include "Event.h"
 
-
-
 Event::Event() {}
 
 // type-based constructors
@@ -22,9 +20,7 @@ Event::Event(Type t, DigitalInput pin, bool currentState) : m_type(t) {
   m_params[0] = static_cast<uint16_t>(pin);
   m_params[1] = static_cast<uint16_t>(currentState);
 }
-Event::Event(Type t, uint8_t timerNum) : m_type(t) {
-	m_params[0] = timerNum;
-}
+Event::Event(Type t, uint8_t timerNum) : m_type(t) { m_params[0] = timerNum; }
 
 Event::Type Event::type() { return m_type; }
 
@@ -56,6 +52,6 @@ std::array<uint16_t, 8> Event::canFrame() {
 DigitalInput Event::digInPin() {
   return static_cast<DigitalInput>(m_params[0]);
 }
-uint8_t Event::timer(){return m_params[0]; }
+uint8_t Event::timer() { return m_params[0]; }
 
 bool Event::digInState() { return static_cast<bool>(m_params[1]); }

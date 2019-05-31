@@ -15,67 +15,64 @@
  *   0     3M
  */
 constexpr CANConfig MakeConfig(CanBusBaudRate baud, bool loopback) {
-	// uint32_t btr = CAN_BTR_SJW(0) | CAN_BTR_TS2(5) | CAN_BTR_TS1(4);
-	uint32_t btr = CAN_BTR_SJW(1) | CAN_BTR_TS2(1) | CAN_BTR_TS1(10);
+  // uint32_t btr = CAN_BTR_SJW(0) | CAN_BTR_TS2(5) | CAN_BTR_TS1(4);
+  uint32_t btr = CAN_BTR_SJW(1) | CAN_BTR_TS2(1) | CAN_BTR_TS1(10);
 
-	if (loopback) {
-		btr |= CAN_BTR_LBKM;
-	}
+  if (loopback) {
+    btr |= CAN_BTR_LBKM;
+  }
 
-	switch (baud) {
-		case CanBusBaudRate::k125k:
-			btr |= CAN_BTR_BRP(CAN_BTR_BRP_125k);
-			break;
-		case CanBusBaudRate::k250k:
-			btr |= CAN_BTR_BRP(CAN_BTR_BRP_250k);  // was 11
-			break;
-		case CanBusBaudRate::k500k:
-			btr |= CAN_BTR_BRP(CAN_BTR_BRP_500k);  // test hal says 6 (was 5)
-			break;
-		case CanBusBaudRate::k1M:
-			btr |= CAN_BTR_BRP(CAN_BTR_BRP_1M);
-			break;
-		case CanBusBaudRate::k1M5:
-			btr |= CAN_BTR_BRP(CAN_BTR_BRP_1M5);
-			break;
-		case CanBusBaudRate::k3M:
-			btr |= CAN_BTR_BRP(CAN_BTR_BRP_3M);
-			break;
-	}
+  switch (baud) {
+    case CanBusBaudRate::k125k:
+      btr |= CAN_BTR_BRP(CAN_BTR_BRP_125k);
+      break;
+    case CanBusBaudRate::k250k:
+      btr |= CAN_BTR_BRP(CAN_BTR_BRP_250k);  // was 11
+      break;
+    case CanBusBaudRate::k500k:
+      btr |= CAN_BTR_BRP(CAN_BTR_BRP_500k);  // test hal says 6 (was 5)
+      break;
+    case CanBusBaudRate::k1M:
+      btr |= CAN_BTR_BRP(CAN_BTR_BRP_1M);
+      break;
+    case CanBusBaudRate::k1M5:
+      btr |= CAN_BTR_BRP(CAN_BTR_BRP_1M5);
+      break;
+    case CanBusBaudRate::k3M:
+      btr |= CAN_BTR_BRP(CAN_BTR_BRP_3M);
+      break;
+  }
 
-	return {CAN_MCR_ABOM | CAN_MCR_AWUM | CAN_MCR_TXFP, btr};
+  return {CAN_MCR_ABOM | CAN_MCR_AWUM | CAN_MCR_TXFP, btr};
 }
 
 CanBus::CanBus(CANDriver* canp, CanBusBaudRate baud, bool loopback) {
-	m_canp = canp;
+  m_canp = canp;
 
-	CANConfig config = MakeConfig(baud, loopback);
-	canStart(m_canp, &config);
+  CANConfig config = MakeConfig(baud, loopback);
+  canStart(m_canp, &config);
 
-	// config the pins
-	if (canp == &CAND1) {
-
-		palSetPadMode(CAN1_RX_PORT, CAN1_RX_PIN, PAL_MODE_ALTERNATE(9)); // CAN RX
-		palSetPadMode(CAN1_TX_PORT, CAN1_TX_PIN, PAL_MODE_ALTERNATE(9)); // CAN TX
-		palSetPadMode(CAN1_STATUS_LED_PORT, CAN1_STATUS_LED_PIN,
-				PAL_MODE_OUTPUT_PUSHPULL);
-		palWritePad(CAN1_STATUS_LED_PORT, CAN1_STATUS_LED_PIN, PAL_HIGH);
-		chThdSleepMilliseconds(500);
-		palWritePad(CAN1_STATUS_LED_PORT, CAN1_STATUS_LED_PIN, PAL_LOW);
-	} else {
-		palSetPadMode(CAN2_RX_PORT, CAN2_RX_PIN, PAL_MODE_ALTERNATE(9)); // CAN RX
-		palSetPadMode(CAN2_TX_PORT, CAN2_TX_PIN, PAL_MODE_ALTERNATE(9)); // CAN TX
-		palSetPadMode(CAN2_STATUS_LED_PORT, CAN2_STATUS_LED_PIN,
-				PAL_MODE_OUTPUT_PUSHPULL);
-		palWritePad(CAN2_STATUS_LED_PORT, CAN2_STATUS_LED_PIN, PAL_HIGH);
-		chThdSleepMilliseconds(500);
-		palWritePad(CAN2_STATUS_LED_PORT, CAN2_STATUS_LED_PIN, PAL_LOW);
-	}
+  // config the pins
+  if (canp == &CAND1) {
+    palSetPadMode(CAN1_RX_PORT, CAN1_RX_PIN, PAL_MODE_ALTERNATE(9));  // CAN RX
+    palSetPadMode(CAN1_TX_PORT, CAN1_TX_PIN, PAL_MODE_ALTERNATE(9));  // CAN TX
+    palSetPadMode(CAN1_STATUS_LED_PORT, CAN1_STATUS_LED_PIN,
+                  PAL_MODE_OUTPUT_PUSHPULL);
+    palWritePad(CAN1_STATUS_LED_PORT, CAN1_STATUS_LED_PIN, PAL_HIGH);
+    chThdSleepMilliseconds(500);
+    palWritePad(CAN1_STATUS_LED_PORT, CAN1_STATUS_LED_PIN, PAL_LOW);
+  } else {
+    palSetPadMode(CAN2_RX_PORT, CAN2_RX_PIN, PAL_MODE_ALTERNATE(9));  // CAN RX
+    palSetPadMode(CAN2_TX_PORT, CAN2_TX_PIN, PAL_MODE_ALTERNATE(9));  // CAN TX
+    palSetPadMode(CAN2_STATUS_LED_PORT, CAN2_STATUS_LED_PIN,
+                  PAL_MODE_OUTPUT_PUSHPULL);
+    palWritePad(CAN2_STATUS_LED_PORT, CAN2_STATUS_LED_PIN, PAL_HIGH);
+    chThdSleepMilliseconds(500);
+    palWritePad(CAN2_STATUS_LED_PORT, CAN2_STATUS_LED_PIN, PAL_LOW);
+  }
 }
 
-CanBus::~CanBus() {
-	canStop (m_canp);
-}
+CanBus::~CanBus() { canStop(m_canp); }
 
 /*
  * @note A blinking LED for the CAN status LEDs indicates alterning
@@ -83,37 +80,35 @@ CanBus::~CanBus() {
  *       success and a solid LOW indicates continuous failure.
  */
 bool CanBus::send(const CANTxFrame& msg) {
-	//printf3("Sent\n");
-	if (canTransmit(m_canp, CAN_ANY_MAILBOX, &msg, TIME_MS2I(100)) == MSG_OK) {
-		// success: HIGH LED
-		if (m_canp == &CAND1) {
-			palWritePad(CAN1_STATUS_LED_PORT, CAN1_STATUS_LED_PIN, PAL_HIGH);
-		} else {
-			palWritePad(CAN2_STATUS_LED_PORT, CAN2_STATUS_LED_PIN, PAL_HIGH);
-		}
-		return true;
-	} else {
-		// error: LOW LED
-		if (m_canp == &CAND1) {
-			palWritePad(CAN1_STATUS_LED_PORT, CAN1_STATUS_LED_PIN, PAL_HIGH);
-			chThdSleepMilliseconds(100);
-			palWritePad(CAN1_STATUS_LED_PORT, CAN1_STATUS_LED_PIN, PAL_LOW);
-		} else {
-			palWritePad(CAN2_STATUS_LED_PORT, CAN2_STATUS_LED_PIN, PAL_HIGH);
-			chThdSleepMilliseconds(100);
-			palWritePad(CAN2_STATUS_LED_PORT, CAN2_STATUS_LED_PIN, PAL_LOW);
-		}
-		// failure
-		return false;
-	}
+  if (canTransmit(m_canp, CAN_ANY_MAILBOX, &msg, TIME_MS2I(100)) == MSG_OK) {
+    // success: HIGH LED
+    if (m_canp == &CAND1) {
+      palWritePad(CAN1_STATUS_LED_PORT, CAN1_STATUS_LED_PIN, PAL_HIGH);
+    } else {
+      palWritePad(CAN2_STATUS_LED_PORT, CAN2_STATUS_LED_PIN, PAL_HIGH);
+    }
+    return true;
+  } else {
+    // error: LOW LED
+    if (m_canp == &CAND1) {
+      palWritePad(CAN1_STATUS_LED_PORT, CAN1_STATUS_LED_PIN, PAL_HIGH);
+      chThdSleepMilliseconds(100);
+      palWritePad(CAN1_STATUS_LED_PORT, CAN1_STATUS_LED_PIN, PAL_LOW);
+    } else {
+      palWritePad(CAN2_STATUS_LED_PORT, CAN2_STATUS_LED_PIN, PAL_HIGH);
+      chThdSleepMilliseconds(100);
+      palWritePad(CAN2_STATUS_LED_PORT, CAN2_STATUS_LED_PIN, PAL_LOW);
+    }
+    // failure
+    return false;
+  }
 }
 
 bool CanBus::recv(CANRxFrame& msg) {
-//	printf3("RX 0x%04X\n",msg.EID);
-	return canReceive(m_canp, CAN_ANY_MAILBOX, &msg, TIME_IMMEDIATE) == MSG_OK;
+  return canReceive(m_canp, CAN_ANY_MAILBOX, &msg, TIME_IMMEDIATE) == MSG_OK;
 }
 
-//void CanBus::printTxMessage(const CANTxFrame& msg) const {
+// void CanBus::printTxMessage(const CANTxFrame& msg) const {
 //	std::printf("[CAN TX] COB-ID:");
 //
 //	// Pad left of shorter ID with spaces
@@ -135,7 +130,7 @@ bool CanBus::recv(CANRxFrame& msg) {
 //	std::printf("\n");
 //}
 //
-//void CanBus::printRxMessage(const CANRxFrame& msg) const {
+// void CanBus::printRxMessage(const CANRxFrame& msg) const {
 //	std::printf("[CAN RX] COB-ID:");
 //
 //	// Pad left of shorter ID with spaces
@@ -162,30 +157,29 @@ bool CanBus::recv(CANRxFrame& msg) {
  *       queue after so that they can be printed
  */
 void CanBus::processTxMessages() {
-	while (m_txQueue.Size() > 0) {
-		send (m_txQueue[0]);
-		m_txQueue.PopFront();
-		//m_txLogsQueue.PushBack(m_txQueue[0]);
-	}
+  while (m_txQueue.Size() > 0) {
+    send(m_txQueue[0]);
+    m_txQueue.PopFront();
+    // m_txLogsQueue.PushBack(m_txQueue[0]);
+  }
 }
 
 /**
  * @desc Enqueue any messages apearing on the CAN bus
  */
 void CanBus::processRxMessages() {
-	static CANRxFrame rxMessageTmp;
-	while (recv(rxMessageTmp)) {
-		m_rxQueue.PushBack(rxMessageTmp);
-		//printf3("PRX 0x%04X\n",rxMessageTmp.EID);
-		// TODO: figure out a way to remove this duplication
-		//m_rxLogsQueue.PushBack(rxMessageTmp);
-	}
+  static CANRxFrame rxMessageTmp;
+  while (recv(rxMessageTmp)) {
+    m_rxQueue.PushBack(rxMessageTmp);
+    // TODO: figure out a way to remove this duplication
+    // m_rxLogsQueue.PushBack(rxMessageTmp);
+  }
 }
 
 /**
  * @desc Prints over serial all messages currently in the tx logs queue
  */
-//void CanBus::printTxAll() {
+// void CanBus::printTxAll() {
 //	static CANTxFrame queueMessage;
 //	queueMessage = m_txLogsQueue.PopFront();
 //	while (queueMessage.EID) {
@@ -199,7 +193,7 @@ void CanBus::processRxMessages() {
 ///**
 // * @desc Prints over serial all messages currently in the rx queue
 // */
-//void CanBus::printRxAll() {
+// void CanBus::printRxAll() {
 //	static CANRxFrame msg;
 //	msg = m_rxLogsQueue.PopFront();
 //	while (msg.EID) {
@@ -212,30 +206,22 @@ void CanBus::processRxMessages() {
 /**
  * @desc Enqueues a packaged message to be transmitted over the CAN bus
  */
-void CanBus::queueTxMessage(CANTxFrame msg) {
-	m_txQueue.PushBack(msg);
-}
+void CanBus::queueTxMessage(CANTxFrame msg) { m_txQueue.PushBack(msg); }
 
 /**
  * @desc Dequeues a packaged message to be unpacked and used
  * @param msg The message at the front of the rx queue
  */
-CANRxFrame CanBus::dequeueRxMessage() {
-	return m_rxQueue.PopFront();
-}
+CANRxFrame CanBus::dequeueRxMessage() { return m_rxQueue.PopFront(); }
 
 /**
  * @desc Gets the current size of the tx queue
  * @return The size
  */
-uint8_t CanBus::txQueueSize() {
-	return m_txQueue.Size();
-}
+uint8_t CanBus::txQueueSize() { return m_txQueue.Size(); }
 
 /**
  * @desc Gets the current size of the rx queue
  * @return The size
  */
-uint8_t CanBus::rxQueueSize() {
-	return m_rxQueue.Size();
-}
+uint8_t CanBus::rxQueueSize() { return m_rxQueue.Size(); }

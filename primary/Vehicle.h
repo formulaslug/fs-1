@@ -17,7 +17,7 @@ static constexpr uint8_t kOff = 0;
 
 static constexpr uint16_t kBrakeMin = 1870;
 static constexpr uint16_t kBrakeMax = 1970;
-static constexpr uint16_t kBrakeThreshold = 10;   //MAKE THIS REAL
+static constexpr uint16_t kBrakeThreshold = 10;  // MAKE THIS REAL
 
 static constexpr uint16_t kThrottleThreshold = 30;
 static constexpr uint16_t kThrottleAMin = 1000;
@@ -28,7 +28,7 @@ static constexpr uint16_t kThrottleBMax = 1380;
 static constexpr uint16_t kSteeringMin = 1050;
 static constexpr uint16_t kSteeringMax = 3300;
 
-//BMS Konstants
+// BMS Konstants
 static constexpr uint8_t kVoltageMin = 200;
 static constexpr uint8_t kTempMax = 200;
 
@@ -50,72 +50,69 @@ static constexpr uint8_t VT_SM_R = 2;
 static constexpr uint8_t VT_F_Throttle = 1;
 
 enum States {
-	kInit,
-	kProfileSelect,
-	kProfileSelectBreak,
-	kForward,
-	kDelayF,
-	kDelayR,
-	kReverse,
-	kFault
+  kInit,
+  kProfileSelect,
+  kProfileSelectBreak,
+  kForward,
+  kDelayF,
+  kDelayR,
+  kReverse,
+  kFault
 };
 
 enum DriveProfiles {
-	kSafe,       		// Parade/Pits/sloooo-moooo
-	kEndurance,  		// competition ready: Endurance
-	kAutoX,       		// competition ready: AutoX
-	kLudicrous 			// PLAID
+  kSafe,       // Parade/Pits/sloooo-moooo
+  kEndurance,  // competition ready: Endurance
+  kAutoX,      // competition ready: AutoX
+  kLudicrous   // PLAID
 };
 
 enum Leds {
-	kLedBMS, kLedIMD, kLedBSPD,
+  kLedBMS,
+  kLedIMD,
+  kLedBSPD,
 };
 
-enum Buttons {
-	kToggleUp, kToggleDown, kReverseButton
-};
+enum Buttons { kToggleUp, kToggleDown, kReverseButton };
 
-enum AnalogInputs {
-	kThrottleVoltage, kBrakeVoltage
-};
+enum AnalogInputs { kThrottleVoltage, kBrakeVoltage };
 
 class Vehicle {
+ public:
+  Vehicle();
 
-public:
+  void profileChange(uint8_t prof);
+  void HandleADCs();
+  void FSM();
+  void setTimerFlag();
+  void secTimer();
+  uint8_t FaultCheck();
 
-	Vehicle();
+  uint8_t state = kInit;
+  uint8_t driveProfile = kSafe;
 
-	void profileChange(uint8_t prof);
-	void HandleADCs();
-	void FSM();
-	void setTimerFlag();
-	void secTimer();
-	uint8_t FaultCheck();
+  uint8_t timerStartFlag = 0;  // request timer number
+  uint8_t timerDoneFlag =
+      0;  // updated by event queue, this is fucking gross Im sorry
 
-	uint8_t state = kInit;
-	uint8_t driveProfile = kSafe;
+  uint16_t throttleA = 0;
+  uint16_t throttleB = 0;
+  uint8_t throttleVal = 0;
 
-	uint8_t timerStartFlag = 0; //request timer number
-	uint8_t timerDoneFlag = 0; //updated by event queue, this is fucking gross Im sorry
+  uint16_t brakeVoltage = 1;
+  uint16_t brakeVal = 1;
 
-	uint16_t throttleA = 0;
-	uint16_t throttleB = 0;
-	uint8_t throttleVal = 0;
+  uint16_t steeringIn = 1;
+  uint16_t steeringAngle = 1;
 
-	uint16_t brakeVoltage = 1;
-	uint16_t brakeVal = 1;
+  uint8_t faults = 0;
+  uint8_t maxSpeed = 5;  // 5 speed units
 
-	uint16_t steeringIn = 1;
-	uint16_t steeringAngle = 1;
+  uint8_t dashInputs = 0;
 
-	uint8_t faults = 0;
-	uint8_t maxSpeed = 5; // 5 speed units
+  uint8_t cellVoltages[28];
+  uint8_t cellTemps[28];
 
-	uint8_t dashInputs = 0;
-
-	uint8_t cellVoltages[28];
-	uint8_t cellTemps[28];
-
-	std::array<uint8_t, kNumLEDs> ledStates; // LED values are 0x00 or 0xff to allow for bitwise not
-
+  std::array<uint8_t, kNumLEDs>
+      ledStates;  // LED values are 0x00 or 0xff to allow for bitwise not
 };

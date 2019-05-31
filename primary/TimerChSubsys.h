@@ -11,13 +11,13 @@
 #include "ch.h"
 #include "hal.h"
 
-
 #define TIMER_INIT_NUM 4
 
 static enum {
-	vt_SM_D = 0, vt_SM_R, vt_F_Throttle,
+  vt_SM_D = 0,
+  vt_SM_R,
+  vt_F_Throttle,
 } Timers;
-
 
 /**
  *
@@ -34,46 +34,42 @@ static enum {
  *       within the context of a chibios static thread
  */
 class TimerChSubsys {
-public:
-	
-	//static virtual_timer_t vt_timers[10]; //STRUCT OF TIMER OBJECTS
+ public:
+  // static virtual_timer_t vt_timers[10]; //STRUCT OF TIMER OBJECTS
 
-	explicit TimerChSubsys(EventQueue& eq);
+  explicit TimerChSubsys(EventQueue& eq);
 
-	/**
-	 * Add a pin to the subsystem and start generating transition events
-	 * immediately
-	 * @param pin Gpio pin (port and pin number)
-	 */
-	bool addTimer();
-	void startTimer(uint8_t timerNum, uint16_t ms);
-	static void timerDone(void *timerState);
-	bool getState(uint8_t timerNum);
-	bool getSavedState(uint8_t timerNum);
+  /**
+   * Add a pin to the subsystem and start generating transition events
+   * immediately
+   * @param pin Gpio pin (port and pin number)
+   */
+  bool addTimer();
+  void startTimer(uint8_t timerNum, uint16_t ms);
+  static void timerDone(void* timerState);
+  bool getState(uint8_t timerNum);
+  bool getSavedState(uint8_t timerNum);
 
-	void runThread();
+  void runThread();
 
-private:
+ private:
+  static constexpr uint16_t kMaxNumTimers = 10;
+  uint16_t m_numTimers = 0;
 
-	static constexpr uint16_t kMaxNumTimers = 10;
-	uint16_t m_numTimers = 0;
+  // @note true if timer is running, false otherwise
+  std::array<virtual_timer_t, kMaxNumTimers> m_timers = {};
+  std::array<bool, kMaxNumTimers> m_timerStates = {};
+  std::array<bool, kMaxNumTimers> m_timerSavedStates = {};
 
-	// @note true if timer is running, false otherwise
-	std::array<virtual_timer_t, kMaxNumTimers> m_timers = { };
-	std::array<bool, kMaxNumTimers> m_timerStates = { };
-	std::array<bool, kMaxNumTimers> m_timerSavedStates = { };
-	
+  bool m_subsysActive = false;
 
-	bool m_subsysActive = false;
+  EventQueue& m_eventQueue;
 
-	EventQueue& m_eventQueue;
+  // TODO: Implement sampling frequency per-pin. Simple solution is
+  //       just a subsystem tick that meets sampling requirements of
+  //       the fastest sampled pin
+  uint32_t m_sampleClkMs = 25;
 
-	// TODO: Implement sampling frequency per-pin. Simple solution is
-	//       just a subsystem tick that meets sampling requirements of
-	//       the fastest sampled pin
-	uint32_t m_sampleClkMs = 25;
-
-	void start();
-	void stop();
-
+  void start();
+  void stop();
 };

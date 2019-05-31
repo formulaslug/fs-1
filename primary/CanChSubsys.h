@@ -4,10 +4,6 @@
 
 #include "CanBus.h"
 
-
-
-
-
 /**
  *
  * CAN subsystem, sitting on top of the chibios CAN driver. Multiple

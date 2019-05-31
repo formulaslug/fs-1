@@ -2,7 +2,6 @@
 
 #include "EventQueue.h"
 
-
 EventQueue::EventQueue() {}
 
 Event EventQueue::pop() {

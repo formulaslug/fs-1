@@ -12,9 +12,6 @@
 #include "hal.h"
 #include "mcuconfFs.h"
 
-
-
-
 /**
  *
  * TODO: Rewrite subsystem using the EXT external interrupt driver
@@ -83,10 +80,12 @@ class DigInChSubsys {
    * @note Maps for constant-time lookup of attrs of the analog input
    */
   // map user's Gpio pin to a pin integer
-  uint32_t kPinMap[kMaxNumPins] = {TOGGLE_UP_PIN,TOGGLE_DOWN_PIN,DRIVE_MODE_PIN,BSPD_FAULT_PIN};
+  uint32_t kPinMap[kMaxNumPins] = {TOGGLE_UP_PIN, TOGGLE_DOWN_PIN,
+                                   DRIVE_MODE_PIN, BSPD_FAULT_PIN};
 
   // map user's Gpio pin to chibios port pointer
-  stm32_gpio_t* kPortMap[kMaxNumPins] = {TOGGLE_UP_PORT, TOGGLE_DOWN_PORT, DRIVE_MODE_PORT,BSPD_FAULT_PORT};
+  stm32_gpio_t* kPortMap[kMaxNumPins] = {TOGGLE_UP_PORT, TOGGLE_DOWN_PORT,
+                                         DRIVE_MODE_PORT, BSPD_FAULT_PORT};
 
   uint32_t getPinNum(DigitalInput p);
 

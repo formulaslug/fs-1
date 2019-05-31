@@ -2,21 +2,18 @@
 
 #pragma once
 
-#include <initializer_list>
+#include <stdint.h>
 #include <cmath>
 #include <cstdio>
+#include <initializer_list>
 #include <vector>
-#include <stdint.h>
 
-#include "hal.h"
-#include "ch.h"
 #include "CircularBuffer.h"
 #include "Event.h"
 #include "EventQueue.h"
+#include "ch.h"
+#include "hal.h"
 #include "mcuconfFs.h"
-//#include "fsprintf.h"
-//static auto printf3 = SDPrinter<&SD3>();
-
 
 enum class CanBusBaudRate : uint8_t {
   k125k,  // 125 kHz

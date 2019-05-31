@@ -2,8 +2,6 @@
 
 #include "DigInChSubsys.h"
 
-
-
 DigInChSubsys::DigInChSubsys(EventQueue& eq) : m_eventQueue(eq) {}
 
 /**
