@@ -28,5 +28,3 @@ namespace std {
 #ifdef __cplusplus
 }  // std
 #endif  // __cplusplus
-
-#include "StdLib.cpp"

@@ -120,7 +120,8 @@ CSRC = $(ALLCSRC)
 # setting.
 CPPSRC = $(ALLCPPSRC) \
          $(wildcard *.cpp) \
-         $(wildcard *.hpp)
+         $(wildcard *.hpp) \
+	 $(wildcard $(COMMONDIR)/*.cpp)
 
 # List ASM source files here.
 ASMSRC = $(ALLASMSRC)
