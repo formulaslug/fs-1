@@ -90,8 +90,8 @@ void initIO() {
   palSetLineMode(LINE_IMD_STATUS, PAL_MODE_INPUT);
   palSetLineMode(LINE_IMD_FLT_LAT, PAL_MODE_INPUT);
 
-  // Clear output pins
-  palClearLine(LINE_BMS_FLT);
+  // Reset BMS fault line
+  palSetLine(LINE_BMS_FLT);
 
   // Set modes for SPI
   palSetLineMode(LINE_SPI_MISO,
