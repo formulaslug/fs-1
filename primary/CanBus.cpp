@@ -16,7 +16,16 @@
  */
 constexpr CANConfig MakeConfig(CanBusBaudRate baud, bool loopback) {
   // uint32_t btr = CAN_BTR_SJW(0) | CAN_BTR_TS2(5) | CAN_BTR_TS1(4);
-  uint32_t btr = CAN_BTR_SJW(1) | CAN_BTR_TS2(1) | CAN_BTR_TS1(10);
+  //uint32_t btr = CAN_BTR_SJW(1) | CAN_BTR_TS2(1) | CAN_BTR_TS1(10);
+  
+  
+  const uint32_t can_clk = STM32_PCLK1;
+  const uint32_t b = static_cast<uint32_t>(baud);
+  
+  uint32_t btr = CAN_BTR_SJW(1) | // standard jump width
+                  CAN_BTR_TS1(5) | // time segment 1
+                  CAN_BTR_TS2(0) | // time segment 2
+                  CAN_BTR_BRP(can_clk / b / 8 - 1); // Baud rate prescaler
 
   if (loopback) {
     btr |= CAN_BTR_LBKM;
@@ -61,7 +70,7 @@ CanBus::CanBus(CANDriver* canp, CanBusBaudRate baud, bool loopback) {
     palWritePad(CAN1_STATUS_LED_PORT, CAN1_STATUS_LED_PIN, PAL_HIGH);
     chThdSleepMilliseconds(500);
     palWritePad(CAN1_STATUS_LED_PORT, CAN1_STATUS_LED_PIN, PAL_LOW);
-  } else {
+  } else if(canp == &CAND2){
     palSetPadMode(CAN2_RX_PORT, CAN2_RX_PIN, PAL_MODE_ALTERNATE(9));  // CAN RX
     palSetPadMode(CAN2_TX_PORT, CAN2_TX_PIN, PAL_MODE_ALTERNATE(9));  // CAN TX
     palSetPadMode(CAN2_STATUS_LED_PORT, CAN2_STATUS_LED_PIN,
@@ -69,6 +78,8 @@ CanBus::CanBus(CANDriver* canp, CanBusBaudRate baud, bool loopback) {
     palWritePad(CAN2_STATUS_LED_PORT, CAN2_STATUS_LED_PIN, PAL_HIGH);
     chThdSleepMilliseconds(500);
     palWritePad(CAN2_STATUS_LED_PORT, CAN2_STATUS_LED_PIN, PAL_LOW);
+  }else{
+    //fucked
   }
 }
 
@@ -84,7 +95,7 @@ bool CanBus::send(const CANTxFrame& msg) {
     // success: HIGH LED
     if (m_canp == &CAND1) {
       palWritePad(CAN1_STATUS_LED_PORT, CAN1_STATUS_LED_PIN, PAL_HIGH);
-    } else {
+    } else if (m_canp == &CAND2) {
       palWritePad(CAN2_STATUS_LED_PORT, CAN2_STATUS_LED_PIN, PAL_HIGH);
     }
     return true;
@@ -94,7 +105,7 @@ bool CanBus::send(const CANTxFrame& msg) {
       palWritePad(CAN1_STATUS_LED_PORT, CAN1_STATUS_LED_PIN, PAL_HIGH);
       chThdSleepMilliseconds(100);
       palWritePad(CAN1_STATUS_LED_PORT, CAN1_STATUS_LED_PIN, PAL_LOW);
-    } else {
+    } else if (m_canp == &CAND2) {
       palWritePad(CAN2_STATUS_LED_PORT, CAN2_STATUS_LED_PIN, PAL_HIGH);
       chThdSleepMilliseconds(100);
       palWritePad(CAN2_STATUS_LED_PORT, CAN2_STATUS_LED_PIN, PAL_LOW);

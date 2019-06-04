@@ -47,12 +47,15 @@ struct HeartbeatMessage : public CANTxFrame {
 
 // ADC MESSAGES
 struct ThrottleMessage : public CANTxFrame {
-  explicit ThrottleMessage(uint8_t throttleVoltage) {
-    IDE = CAN_IDE_STD;
+  explicit ThrottleMessage(uint16_t throttleVoltage, uint8_t forwardSwitch, uint8_t reverseSwitch) {
+    IDE = CAN_IDE_EXT;
     RTR = CAN_RTR_DATA;
     SID = kFuncIdThrottle;
-    DLC = 1;
-    data8[0] = throttleVoltage;  // MSB (32's 3rd byte) (left most byte in DVT)
+    DLC = 4;
+    data8[0] = throttleVoltage >> 8;  // MSB (32's 3rd byte) (left most byte in DVT)
+    data8[1] = throttleVoltage;
+    data8[2] = forwardSwitch;
+    data8[3] = reverseSwitch; 
   }
 };
 
