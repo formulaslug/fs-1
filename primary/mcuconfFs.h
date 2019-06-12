@@ -25,9 +25,9 @@ enum class DigitalInput { kToggleUp = 0, kToggleDown, kDriveMode, kBSPDFault };
 #endif /* STM32F3 */
 
 #ifdef STM32F405
-#define CAN_BTR_BRP_125k 239
-#define CAN_BTR_BRP_250k 11  // was 13
-#define CAN_BTR_BRP_500k 6
+#define CAN_BTR_BRP_125k 23
+#define CAN_BTR_BRP_250k 11
+#define CAN_BTR_BRP_500k 5
 #define CAN_BTR_BRP_1M 2
 #define CAN_BTR_BRP_1M5 1
 #define CAN_BTR_BRP_3M 0

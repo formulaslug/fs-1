@@ -20,12 +20,12 @@ constexpr CANConfig MakeConfig(CanBusBaudRate baud, bool loopback) {
   
   
   const uint32_t can_clk = STM32_PCLK1;
-  const uint32_t b = static_cast<uint32_t>(baud);
+  const uint32_t b = static_cast<uint32_t>(baud); //42 MHz on F405
   
   uint32_t btr = CAN_BTR_SJW(1) | // standard jump width
-                  CAN_BTR_TS1(5) | // time segment 1
-                  CAN_BTR_TS2(0) | // time segment 2
-                  CAN_BTR_BRP(can_clk / b / 8 - 1); // Baud rate prescaler
+                  CAN_BTR_TS1(10) | // time segment 1 = 12+1 = 13
+                  CAN_BTR_TS2(1); //| // time segment 2 = 1+1 = 2
+                  //CAN_BTR_BRP(can_clk / b / 8 - 1); // Baud rate prescaler
 
   if (loopback) {
     btr |= CAN_BTR_LBKM;
