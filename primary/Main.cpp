@@ -71,11 +71,9 @@ int main() {
 
   // palSetPadMode(DRIVE_BUTTON_PORT, DRIVE_BUTTON_PIN, PAL_MODE_INPUT_PULLUP);
   // // AMS
-  palSetPadMode(DRIVE_MODE_PORT, DRIVE_MODE_PIN,
-                PAL_MODE_INPUT_PULLUP);  // BSPD
-  palSetPadMode(BSPD_FAULT_PORT, BSPD_FAULT_PIN,
-                PAL_MODE_INPUT_PULLUP);  // RTDS signal
-                                         // Digital outputs
+  palSetPadMode(DRIVE_MODE_PORT, DRIVE_MODE_PIN, PAL_MODE_INPUT_PULLUP);  // BSPD
+  palSetPadMode(BSPD_FAULT_PORT, BSPD_FAULT_PIN, PAL_MODE_INPUT_PULLUP);  // RTDS signal
+                                                                          // Digital outputs
   palSetPadMode(IMD_FAULT_INDICATOR_PORT, IMD_FAULT_INDICATOR_PIN,
                 PAL_MODE_OUTPUT_PUSHPULL);  // IMD
   palSetPadMode(AMS_FAULT_INDICATOR_PORT, AMS_FAULT_INDICATOR_PIN,
@@ -84,19 +82,16 @@ int main() {
                 PAL_MODE_OUTPUT_PUSHPULL);  // BSPD
   palSetPadMode(STARTUP_SOUND_PORT, STARTUP_SOUND_PIN,
                 PAL_MODE_OUTPUT_PUSHPULL);  // RTDS signal
-  palSetPadMode(BRAKE_LIGHT_PORT, BRAKE_LIGHT_PIN,
-                PAL_MODE_OUTPUT_PUSHPULL);  // Brake light signal
-  palSetPadMode(STARTUP_LED_PORT, STARTUP_LED_PIN,
-                PAL_MODE_OUTPUT_PUSHPULL);  // Brake light signal
+  palSetPadMode(BRAKE_LIGHT_PORT, BRAKE_LIGHT_PIN, PAL_MODE_OUTPUT_PUSHPULL);  // Brake light signal
+  palSetPadMode(STARTUP_LED_PORT, STARTUP_LED_PIN, PAL_MODE_OUTPUT_PUSHPULL);  // Brake light signal
   palSetPadMode(CAN1_RX_PORT, CAN1_RX_PIN, PAL_MODE_ALTERNATE(9));  // CAN RX
   palSetPadMode(CAN1_TX_PORT, CAN1_TX_PIN, PAL_MODE_ALTERNATE(9));  // CAN TX
   palSetPadMode(CAN1_STATUS_LED_PORT, CAN1_STATUS_LED_PIN,
-                PAL_MODE_OUTPUT_PUSHPULL);    
+                PAL_MODE_OUTPUT_PUSHPULL);
   palSetPadMode(CAN2_RX_PORT, CAN2_RX_PIN, PAL_MODE_ALTERNATE(9));  // CAN RX
   palSetPadMode(CAN2_TX_PORT, CAN2_TX_PIN, PAL_MODE_ALTERNATE(9));  // CAN TX
   palSetPadMode(CAN2_STATUS_LED_PORT, CAN2_STATUS_LED_PIN,
                 PAL_MODE_OUTPUT_PUSHPULL);
-
 
   // Init LED states to LOW (including faults)
   palClearPad(IMD_FAULT_INDICATOR_PORT, IMD_FAULT_INDICATOR_PIN);
@@ -107,29 +102,27 @@ int main() {
   palClearPad(STARTUP_LED_PORT, STARTUP_LED_PIN);
   palClearPad(CAN1_STATUS_LED_PORT, CAN1_STATUS_LED_PIN);
   palClearPad(CAN2_STATUS_LED_PORT, CAN2_STATUS_LED_PIN);
-  
+
   palSetPad(STARTUP_LED_PORT, STARTUP_LED_PIN);
+
   chThdSleepMilliseconds(200);
   palClearPad(STARTUP_LED_PORT, STARTUP_LED_PIN);
   chThdSleepMilliseconds(200);
 
   Vehicle vehicle;
 
-//  CanBus canBusLv(&CAND1, CanBusBaudRate::k500k, false);
-//  chibios_rt::Mutex canBusLvMut;
-//  
-//  chThdSleepMilliseconds(200);
-//
-  CanBus canBusHv(&CAND2, CanBusBaudRate::k1M, false);
-  chibios_rt::Mutex canBusHvMut;
-  
+  CanBus canBusLv(&CAND1, CanBusBaudRate::k500k, true);
+  chibios_rt::Mutex canBusLvMut;
+
+//  CanBus canBusHv(&CAND2, CanBusBaudRate::k1M, false);
+//  chibios_rt::Mutex canBusHvMut;
+
   palSetPad(STARTUP_LED_PORT, STARTUP_LED_PIN);
-  
 
   EventQueue fsmEventQueue = EventQueue();
 
-//  CanChSubsys canLvChSubsys = CanChSubsys(canBusLv, canBusLvMut, fsmEventQueue);
-  CanChSubsys canHvChSubsys = CanChSubsys(canBusHv, canBusHvMut, fsmEventQueue);
+  CanChSubsys canLvChSubsys = CanChSubsys(canBusLv, canBusLvMut, fsmEventQueue);
+//  CanChSubsys canHvChSubsys = CanChSubsys(canBusHv, canBusHvMut, fsmEventQueue);
   AdcChSubsys adcChSubsys = AdcChSubsys(fsmEventQueue);
   DigInChSubsys digInChSubsys = DigInChSubsys(fsmEventQueue);
   TimerChSubsys timerChSubsys = TimerChSubsys(fsmEventQueue);
@@ -137,22 +130,20 @@ int main() {
   /*
    * Create threads (many of which are driving subsystems)
    */
-//  chThdCreateStatic(canRxLvThreadFuncWa, sizeof(canRxLvThreadFuncWa),
-//                    NORMALPRIO, canRxLvThreadFunc, &canLvChSubsys);
-//  chThdCreateStatic(canTxLvThreadFuncWa, sizeof(canTxLvThreadFuncWa),
-//                    NORMALPRIO + 1, canTxLvThreadFunc, &canLvChSubsys);
-  chThdCreateStatic(canRxHvThreadFuncWa, sizeof(canRxHvThreadFuncWa),
-                    NORMALPRIO, canRxHvThreadFunc, &canHvChSubsys);
-  chThdCreateStatic(canTxHvThreadFuncWa, sizeof(canTxHvThreadFuncWa),
-                    NORMALPRIO + 1, canTxHvThreadFunc, &canHvChSubsys);
+  chThdCreateStatic(canRxLvThreadFuncWa, sizeof(canRxLvThreadFuncWa),
+                    NORMALPRIO, canRxLvThreadFunc, &canLvChSubsys);
+  chThdCreateStatic(canTxLvThreadFuncWa, sizeof(canTxLvThreadFuncWa),
+                    NORMALPRIO + 1, canTxLvThreadFunc, &canLvChSubsys);
+//  chThdCreateStatic(canRxHvThreadFuncWa, sizeof(canRxHvThreadFuncWa),
+//                    NORMALPRIO, canRxHvThreadFunc, &canHvChSubsys);
+//  chThdCreateStatic(canTxHvThreadFuncWa, sizeof(canTxHvThreadFuncWa),
+//                    NORMALPRIO + 1, canTxHvThreadFunc, &canHvChSubsys);
   chThdCreateStatic(adcThreadFuncWa, sizeof(adcThreadFuncWa), NORMALPRIO,
                     adcThreadFunc, &adcChSubsys);
   chThdCreateStatic(digInThreadFuncWa, sizeof(digInThreadFuncWa), NORMALPRIO,
                     digInThreadFunc, &digInChSubsys);
   chThdCreateStatic(timerThreadFuncWa, sizeof(timerThreadFuncWa), NORMALPRIO,
                     timerThreadFunc, &timerChSubsys);
-
-
 
   adcChSubsys.addPin(Gpio::kA1);  // add brake input
   adcChSubsys.addPin(Gpio::kA2);  // add throttle input A
@@ -164,7 +155,7 @@ int main() {
   digInChSubsys.addPin(DigitalInput::kDriveMode);
   digInChSubsys.addPin(DigitalInput::kBSPDFault);
 
-  static const SerialConfig sConfig = {115200, 0, USART_CR2_STOP1_BITS, 0};
+  static const SerialConfig sConfig = { 115200, 0, USART_CR2_STOP1_BITS, 0 };
   palSetLineMode(UART_RX_LINE, PAL_MODE_ALTERNATE(7));  // UART RX
   palSetLineMode(UART_TX_LINE, PAL_MODE_ALTERNATE(7));  // UART TX
   sdStart(&SD3, &sConfig);
@@ -172,29 +163,28 @@ int main() {
   printf3("STARTING UP\n");
 
   for (uint8_t i = 0; i < 3; i++) {
-    palWritePad(IMD_FAULT_INDICATOR_PORT, IMD_FAULT_INDICATOR_PIN,
-                PAL_HIGH);  // IMD
-    palWritePad(AMS_FAULT_INDICATOR_PORT, AMS_FAULT_INDICATOR_PIN,
-                PAL_HIGH);  // AMS
-    palWritePad(BSPD_FAULT_INDICATOR_PORT, BSPD_FAULT_INDICATOR_PIN,
-                PAL_HIGH);                                         // BSPD
-    palWritePad(STARTUP_SOUND_PORT, STARTUP_SOUND_PIN, PAL_HIGH);  // RTDS
+    palWritePad(IMD_FAULT_INDICATOR_PORT, IMD_FAULT_INDICATOR_PIN, PAL_HIGH);  // IMD
+    palWritePad(AMS_FAULT_INDICATOR_PORT, AMS_FAULT_INDICATOR_PIN, PAL_HIGH);  // AMS
+    palWritePad(BSPD_FAULT_INDICATOR_PORT, BSPD_FAULT_INDICATOR_PIN, PAL_HIGH);  // BSPD
+    //palWritePad(STARTUP_SOUND_PORT, STARTUP_SOUND_PIN, PAL_HIGH);  // RTDS
     palWritePad(BRAKE_LIGHT_PORT, BRAKE_LIGHT_PIN, PAL_HIGH);  // Brake Light
     chThdSleepMilliseconds(200);
-    palWritePad(IMD_FAULT_INDICATOR_PORT, IMD_FAULT_INDICATOR_PIN,
-                PAL_LOW);  // IMD
-    palWritePad(AMS_FAULT_INDICATOR_PORT, AMS_FAULT_INDICATOR_PIN,
-                PAL_LOW);  // AMS
-    palWritePad(BSPD_FAULT_INDICATOR_PORT, BSPD_FAULT_INDICATOR_PIN,
-                PAL_LOW);                                         // Temp
-    palWritePad(STARTUP_SOUND_PORT, STARTUP_SOUND_PIN, PAL_LOW);  // RTDS
+    palWritePad(IMD_FAULT_INDICATOR_PORT, IMD_FAULT_INDICATOR_PIN, PAL_LOW);  // IMD
+    palWritePad(AMS_FAULT_INDICATOR_PORT, AMS_FAULT_INDICATOR_PIN, PAL_LOW);  // AMS
+    palWritePad(BSPD_FAULT_INDICATOR_PORT, BSPD_FAULT_INDICATOR_PIN, PAL_LOW);  // Temp
+    //palWritePad(STARTUP_SOUND_PORT, STARTUP_SOUND_PIN, PAL_LOW);  // RTDS
     palWritePad(BRAKE_LIGHT_PORT, BRAKE_LIGHT_PIN, PAL_LOW);      // Brake Light
+
     chThdSleepMilliseconds(200);
   }
+  palWritePad(BRAKE_LIGHT_PORT, BRAKE_LIGHT_PIN, PAL_HIGH);  // Brake Light
+
+  uint16_t test = 420;
+  HeartbeatMessage heartbeat(test);
 
   while (1) {
     // canHvChSubsys.startSend(msg);
-    // canLvChSubsys.startSend(msg);
+    canLvChSubsys.startSend(heartbeat);
 
     while (fsmEventQueue.size() > 0) {
       Event e = fsmEventQueue.pop();
@@ -251,9 +241,12 @@ int main() {
             break;
         }
       } else if (e.type() == Event::Type::kCanRx) {
-        std::array<uint16_t, 8> canData = e.canFrame();
+        std::array < uint16_t, 8 > canData = e.canFrame();
         uint32_t canEid = e.canEid();
         switch (canEid) {
+          case kFuncIdHeartBeatECU:  // HEARTBEAT
+            //do nothing 
+            break;
           case kFuncIdCellTempAdc[0]:  // Replace with Cell Temp ID Row 0
             for (int i = 0; i < 7; i++) {
               vehicle.cellTemps[i] = canData[i];
@@ -330,12 +323,12 @@ int main() {
           // printf3("Steering:%d\n", adcIn);
         }
         vehicle.HandleADCs();
-        ThrottleMessage throttleMessage(vehicle.throttleVal , vehicle.forwardSwitch, vehicle.reverseSwitch);
+//        ThrottleMessage throttleMessage(vehicle.throttleVal , vehicle.forwardSwitch, vehicle.reverseSwitch);
 //        canLvChSubsys.startSend(throttleMessage);
-        canHvChSubsys.startSend(throttleMessage);
-        SteeringMessage steeringMessage(vehicle.steeringAngle);
+//        canHvChSubsys.startSend(throttleMessage);
+//        SteeringMessage steeringMessage(vehicle.steeringAngle);
 //        canLvChSubsys.startSend(steeringMessage);
-        BrakeMessage brakeMessage(vehicle.brakeVal);
+//        BrakeMessage brakeMessage(vehicle.brakeVal);
 //        canLvChSubsys.startSend(brakeMessage);
 
       } else if (e.type() == Event::Type::kTimerTimeout) {
@@ -352,7 +345,8 @@ int main() {
           printf3("What the timer shit\n");
         }
       }
-    }  // End Event Queue Stuff
+      // printf3("ECU Undicked\n");
+    }  // END EVENT QUEUE
 
     if (vehicle.timerStartFlag > 0) {  // Real burnt timer shit
       if (vehicle.timerStartFlag & VT_SM_D) {

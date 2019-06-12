@@ -13,8 +13,8 @@ template<SerialDriver *SD> class SDPrinter {
     va_list args;
     va_start(args, s);
     chMtxLock(&lock);
-    //int r = chvprintf((BaseSequentialStream *)SD, s, args);
+    int r = chvprintf((BaseSequentialStream *)SD, s, args);
     chMtxUnlock(&lock);
-    return 0;
+    return r;
   }
 };

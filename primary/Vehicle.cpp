@@ -84,6 +84,12 @@ void Vehicle::HandleADCs() {
 	steeringAngle = (100 * (steeringIn - kSteeringMin)
 			/ (kSteeringMax - kSteeringMin));
 	//	arctan(total displacement (cm) /7 (cm)) = steering angle
+	
+	
+	throttleVal = 0 ; //THIS BREAKS EVERYTHING 
+	//TODO:lick my balls
+	
+	
 }
 
 void Vehicle::FaultCheck() { // checks if any fault states have tripped and puts
