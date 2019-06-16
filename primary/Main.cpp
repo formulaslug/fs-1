@@ -287,19 +287,28 @@ int main() {
               vehicle.cellVoltages[i + 21] = canData[i];
             }
             break;
-          case kFuncIdFaultStatuses:  // Replace with State ID
+          case kFuncIdCellVoltage[4]:  // Replace with Cell Voltage ID Row 3
+            for (int i = 0; i < 7; i++) {
+              vehicle.cellVoltages[i + 21] = canData[i];
+            }
+            break;
+          case kFuncIdCellVoltage[5]:  // Replace with Cell Voltage ID Row 3
+            for (int i = 0; i < 7; i++) {
+              vehicle.cellVoltages[i + 21] = canData[i];
+            }
+            break;
+          case kFuncIdCellVoltage[6]:  // Replace with Cell Voltage ID Row 3
+            for (int i = 0; i < 7; i++) {
+              vehicle.cellVoltages[i + 21] = canData[i];
+            }
+            break;
+          case kFuncIdCellStartup:  // Replace with State ID
 
             break;
-          case kFuncIdPackVoltage:  // Replace with Pack Voltage ID
+          case kFuncIdFaultStatus:  // Replace with Pack Voltage ID
 
             break;
-          case kFuncIdPackCurrent:  // Replace with Current ID
-
-            break;
-          case kFuncIdEnergy:  // Replace with Energy In/Out
-
-            break;
-          case kFuncIdPackResistance:  // Replace with Pack Resistance ID
+          case kFuncIdBmsStat:  // Replace with Current ID
 
             break;
           default:

@@ -7,7 +7,6 @@
 
 #include "ch.h"
 #include "hal.h"
-#include "mcuconfFs.h"
 
 // SIDs From ECU
 constexpr uint32_t kFuncIdHeartBeatECU = 0x700;
@@ -20,13 +19,12 @@ constexpr uint32_t kFuncIdDigital = 0x022;
 
 // SIDs From Accumulator
 constexpr uint32_t kFuncIdHeartBeatAcc = 0x701;
-constexpr uint32_t kFuncIdCellTempAdc[4] = {0x002, 0x003, 0x004, 0x005};
-constexpr uint32_t kFuncIdCellVoltage[4] = {0x012, 0x013, 0x014, 0x015};
-constexpr uint32_t kFuncIdFaultStatuses = 0x006;
-constexpr uint32_t kFuncIdPackVoltage = 0x201;
-constexpr uint32_t kFuncIdPackCurrent = 0x202;
-constexpr uint32_t kFuncIdEnergy = 0x203;
-constexpr uint32_t kFuncIdPackResistance = 0x204;
+constexpr uint32_t kFuncIdCellStartup = 0x420;
+constexpr uint32_t kFuncIdFaultStatus = 0x421;
+constexpr uint32_t kFuncIdBmsStat = 0x422;
+constexpr uint32_t kFuncIdCellVoltage[7] = {0x423, 0x424, 0x425, 0x426,
+                                            0x427, 0x428, 0x429};
+constexpr uint32_t kFuncIdCellTempAdc[4] = {0x42a, 0x42b, 0x42c, 0x42d};
 
 // Payload constants
 constexpr uint32_t kPayloadHeartbeat = 0x1;
@@ -90,13 +88,14 @@ struct DigitalMessage : public CANTxFrame {
 };
 
 struct BMSVoltageMessage : public CANTxFrame {
-  explicit BMSVoltageMessage(uint8_t row, uint8_t *voltages) {
+  explicit BMSVoltageMessage(uint8_t row, uint16_t *voltages) {
     IDE = CAN_IDE_STD;
     RTR = CAN_RTR_DATA;
     SID = kFuncIdCellVoltage[row];
-    DLC = 7;
-    for (int i = 0; i < 7; i++) {
-      data8[i] = voltages[i];
+    DLC = 8;
+    for (int i = 0; i < 7; i += 2) {
+      data8[i] = voltages[i / 2] >> 8;
+      data8[i + 1] = voltages[i / 2] & 0xFF;
     }
   }
 };
@@ -110,5 +109,24 @@ struct BMSTempMessage : public CANTxFrame {
     for (int i = 0; i < 7; i++) {
       data8[i] = temps[i];
     }
+  }
+};
+
+struct BMSStatMessage : public CANTxFrame {
+  explicit BMSStatMessage(uint16_t totalVoltage, uint16_t totalCurrent,
+                          uint8_t maxVoltage, uint8_t minVoltage,
+                          uint8_t maxTemp, uint8_t minTemp) {
+    IDE = CAN_IDE_STD;
+    RTR = CAN_RTR_DATA;
+    SID = kFuncIdBmsStat;
+    DLC = 7;
+    data8[0] = (totalVoltage >> 8) & 0xff;
+    data8[1] = totalVoltage & 0xff;
+    data8[2] = (totalCurrent >> 8) & 0xff;
+    data8[3] = totalCurrent & 0xff;
+    data8[4] = maxVoltage;
+    data8[5] = minVoltage;
+    data8[6] = maxTemp;
+    data8[7] = minTemp;
   }
 };

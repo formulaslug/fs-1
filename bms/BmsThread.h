@@ -30,8 +30,6 @@ class BMSThread : public BaseStaticThread<1024> {
     }
   }
 
-  void getValues() {}
-
  private:
   unsigned int m_delay;
   LTC6811Bus* m_bus;
@@ -39,8 +37,16 @@ class BMSThread : public BaseStaticThread<1024> {
 
  protected:
   void main() {
+    uint16_t* allVoltages = new uint16_t[BMS_BANK_COUNT * BMS_BANK_CELL_COUNT];
+    uint8_t* allTemps = new uint8_t[BMS_BANK_COUNT * BMS_BANK_CELL_COUNT];
     while (!shouldTerminate()) {
       systime_t timeStart = chVTGetSystemTime();
+
+      uint16_t allBanksVoltage = 0;
+      uint16_t minVoltage = 0xFFFF;
+      uint16_t maxVoltage = 0x0000;
+      uint8_t minTemp = 0xFF;
+      uint8_t maxTemp = 0x00;
 
       for (int i = 0; i < BMS_BANK_COUNT; i++) {
         // Get a reference to the config for toggling gpio
@@ -86,8 +92,24 @@ class BMSThread : public BaseStaticThread<1024> {
         // Process voltages
         unsigned int totalVoltage = 0;
         chprintf((BaseSequentialStream*)&SD2, "Voltages: ");
-        for (int i = 0; i < 12; i++) {
-          int voltage = voltages[i] / 10;
+        for (int j = 0; j < 12; j++) {
+          uint16_t voltage = voltages[j] / 10;
+
+          if (voltage != 0 && voltage <= BMS_FAULT_VOLTAGE_THRESHOLD_LOW) {
+            // Set fault line
+            chprintf((BaseSequentialStream*)&SD2,
+                     "***** BMS VOLT FAULT *****\r\nVoltage at %d\r\n\r\n",
+                     voltage);
+            palClearLine(LINE_BMS_FLT);
+            // TODO: Do this better
+          }
+          int index = BMS_CELL_MAP[j];
+          if (index != -1)
+            allVoltages[(BMS_BANK_CELL_COUNT * i) + index] = voltage;
+
+          if (voltage < minVoltage && voltage != 0) minVoltage = voltage;
+          if (voltage > maxVoltage) maxVoltage = voltage;
+
           totalVoltage += voltage;
           chprintf((BaseSequentialStream*)&SD2, "%dmV ", voltage);
         }
@@ -100,7 +122,12 @@ class BMSThread : public BaseStaticThread<1024> {
 
         chprintf((BaseSequentialStream*)&SD2, "Temperatures: ");
         for (unsigned int j = 0; j < BMS_BANK_TEMP_COUNT; j++) {
-          uint16_t temp = convertTemp(temperatures[j] / 10);
+          uint8_t temp = convertTemp(temperatures[j] / 10);
+
+          allTemps[(BMS_BANK_TEMP_COUNT * i) + j] = temp;
+          if (temp < minTemp) minTemp = temp;
+          if (temp > maxTemp) maxTemp = temp;
+
           if (temp >= BMS_FAULT_TEMP_THRESHOLD_HIGH) {
             // Set fault line
             chprintf((BaseSequentialStream*)&SD2,
@@ -113,7 +140,24 @@ class BMSThread : public BaseStaticThread<1024> {
         }
         chprintf((BaseSequentialStream*)&SD2, "\r\n");
 
+        allBanksVoltage += totalVoltage / 10;
+
         chprintf((BaseSequentialStream*)&SD2, "\r\n");
+      }
+
+      auto txmsg = BMSStatMessage(allBanksVoltage, 0, maxVoltage / 100,
+                                  minVoltage / 100, maxTemp, minTemp);
+      canTransmit(&BMS_CAN_DRIVER, CAN_ANY_MAILBOX, &txmsg, TIME_MS2I(100));
+
+      // Send CAN
+      for (size_t i = 0; i < BMS_BANK_COUNT; i++) {
+        auto txmsg = BMSTempMessage(i, allTemps + (BMS_BANK_TEMP_COUNT * i));
+        canTransmit(&BMS_CAN_DRIVER, CAN_ANY_MAILBOX, &txmsg, TIME_MS2I(100));
+      }
+
+      for (size_t i = 0; i < 7; i++) {
+        auto txmsg = BMSVoltageMessage(i, allVoltages + (4 * i));
+        canTransmit(&BMS_CAN_DRIVER, CAN_ANY_MAILBOX, &txmsg, TIME_MS2I(100));
       }
 
       // Compute time elapsed since beginning of measurements and sleep for
