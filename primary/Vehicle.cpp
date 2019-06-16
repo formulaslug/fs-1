@@ -50,8 +50,14 @@ void Vehicle::HandleADCs() {
 			/ (kThrottleAMax - kThrottleAMin);
 	tempB = 65535 * (throttleB - kThrottleBMin)
 			/ (kThrottleBMax - kThrottleBMin);
+	
+	throttleValDash = (65535 - ((tempA + tempB) / 2))/256;
+	if (throttleValDash > 255) {
+	      throttleVal = 255;
+	    }
+	
 	if (tempA > tempB + (65535 * .1) || tempA < tempB - (65535 * .1)) {
-		//throttleVal = 0;
+		throttleVal = 0;
 		// Dicked
 	} else {
 		throttleVal = 65535 - ((tempA + tempB) / 2);
@@ -86,9 +92,9 @@ void Vehicle::HandleADCs() {
 	//	arctan(total displacement (cm) /7 (cm)) = steering angle
 	
 	
-	throttleVal = 0 ; //THIS BREAKS EVERYTHING 
-	//TODO:lick my balls
 	
+	//TODO:lick my balls
+	//throttleVal = 0 ; //THIS BREAKS EVERYTHING 
 	
 }
 

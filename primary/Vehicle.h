@@ -15,8 +15,8 @@ constexpr uint8_t kNumButtons = 2;
 static constexpr uint8_t kOn = 1;
 static constexpr uint8_t kOff = 0;
 
-static constexpr uint16_t kBrakeMin = 1870;
-static constexpr uint16_t kBrakeMax = 1970;
+static constexpr uint16_t kBrakeMin = 1520;
+static constexpr uint16_t kBrakeMax = 1585;
 static constexpr uint16_t kBrakeThreshold = 10;  // MAKE THIS REAL
 
 static constexpr uint16_t kThrottleThreshold = 30;
@@ -30,7 +30,8 @@ static constexpr uint16_t kThrottleEnduranceMax = 65535 * .3;
 static constexpr uint16_t kThrottleAutoXMax = 65535 * .5;
 static constexpr uint16_t kThrottleLudicrousMax = 65535 * .7;
 
-static constexpr uint16_t kSteeringMin = 1050;
+static constexpr uint16_t kSteeringMin = 1150;
+
 static constexpr uint16_t kSteeringMax = 3300;
 
 // BMS Konstants
@@ -104,6 +105,7 @@ public:
 	uint16_t throttleA = 0;
 	uint16_t throttleB = 0;
 	uint16_t throttleVal = 0;
+	uint8_t throttleValDash = 0;
 	uint8_t forwardSwitch = 0;
 	uint8_t reverseSwitch = 0;
 

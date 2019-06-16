@@ -111,18 +111,18 @@ int main() {
 
   Vehicle vehicle;
 
-  CanBus canBusLv(&CAND1, CanBusBaudRate::k500k, true);
+  CanBus canBusLv(&CAND1, CanBusBaudRate::k500k, false);
   chibios_rt::Mutex canBusLvMut;
 
-//  CanBus canBusHv(&CAND2, CanBusBaudRate::k1M, false);
-//  chibios_rt::Mutex canBusHvMut;
+  CanBus canBusHv(&CAND2, CanBusBaudRate::k1M, true);
+  chibios_rt::Mutex canBusHvMut;
 
   palSetPad(STARTUP_LED_PORT, STARTUP_LED_PIN);
 
   EventQueue fsmEventQueue = EventQueue();
 
   CanChSubsys canLvChSubsys = CanChSubsys(canBusLv, canBusLvMut, fsmEventQueue);
-//  CanChSubsys canHvChSubsys = CanChSubsys(canBusHv, canBusHvMut, fsmEventQueue);
+  CanChSubsys canHvChSubsys = CanChSubsys(canBusHv, canBusHvMut, fsmEventQueue);
   AdcChSubsys adcChSubsys = AdcChSubsys(fsmEventQueue);
   DigInChSubsys digInChSubsys = DigInChSubsys(fsmEventQueue);
   TimerChSubsys timerChSubsys = TimerChSubsys(fsmEventQueue);
@@ -134,10 +134,10 @@ int main() {
                     NORMALPRIO, canRxLvThreadFunc, &canLvChSubsys);
   chThdCreateStatic(canTxLvThreadFuncWa, sizeof(canTxLvThreadFuncWa),
                     NORMALPRIO + 1, canTxLvThreadFunc, &canLvChSubsys);
-//  chThdCreateStatic(canRxHvThreadFuncWa, sizeof(canRxHvThreadFuncWa),
-//                    NORMALPRIO, canRxHvThreadFunc, &canHvChSubsys);
-//  chThdCreateStatic(canTxHvThreadFuncWa, sizeof(canTxHvThreadFuncWa),
-//                    NORMALPRIO + 1, canTxHvThreadFunc, &canHvChSubsys);
+  chThdCreateStatic(canRxHvThreadFuncWa, sizeof(canRxHvThreadFuncWa),
+                    NORMALPRIO, canRxHvThreadFunc, &canHvChSubsys);
+  chThdCreateStatic(canTxHvThreadFuncWa, sizeof(canTxHvThreadFuncWa),
+                    NORMALPRIO + 1, canTxHvThreadFunc, &canHvChSubsys);
   chThdCreateStatic(adcThreadFuncWa, sizeof(adcThreadFuncWa), NORMALPRIO,
                     adcThreadFunc, &adcChSubsys);
   chThdCreateStatic(digInThreadFuncWa, sizeof(digInThreadFuncWa), NORMALPRIO,
@@ -198,6 +198,9 @@ int main() {
               vehicle.dashInputs |= toggleUp;
               // printf3("toggleUp\n");
               // printf3("T:%d\n",vehicle.throttleVal);
+                  printf3("brakes:%d  T1: %d   T2: %d\n",vehicle.brakeVoltage,vehicle.throttleA,vehicle.throttleB);
+
+//              printf3("Brakes:%d\n", vehicle.brakeVoltage);
             } else {
               vehicle.dashInputs &= ~toggleUp;
               // printf3("toggleUp Released\n");
@@ -206,6 +209,7 @@ int main() {
           case DigitalInput::kToggleDown:
             if (digInState) {
               vehicle.dashInputs |= toggleDown;
+//              printf3("ThrottleA:%d\n", vehicle.throttleA);
               // printf3("toggleDown\n");
               // printf3("B:%d\n",vehicle.brakeVoltage);
               // printf3("B:%d\n",vehicle.brakeVal);
@@ -217,8 +221,10 @@ int main() {
           case DigitalInput::kDriveMode:
             if (digInState) {
               vehicle.dashInputs |= revButton;
+//              printf3("ThrottleB:%d\n", vehicle.throttleB);
               // printf3("Reverse\n");
               // printf3("S:%d\n",vehicle.steeringAngle);
+              printf3("B:%d   T1:%d   T2:%d   S:%d\n",vehicle.brakeVoltage,vehicle.throttleA,vehicle.throttleB,vehicle.steeringIn);
             } else {
               vehicle.dashInputs &= ~revButton;
               // printf3("Reverse Released\n");
@@ -246,6 +252,7 @@ int main() {
         switch (canEid) {
           case kFuncIdHeartBeatECU:  // HEARTBEAT
             //do nothing 
+           // printf3("Beat\n");
             break;
           case kFuncIdCellTempAdc[0]:  // Replace with Cell Temp ID Row 0
             for (int i = 0; i < 7; i++) {
@@ -303,7 +310,7 @@ int main() {
 
             break;
           default:
-            printf3("UnknownCAN\n");
+            //printf3("UnknownCAN\n");
             break;
         }
       } else if (e.type() == Event::Type::kAdcConversion) {
@@ -323,13 +330,14 @@ int main() {
           // printf3("Steering:%d\n", adcIn);
         }
         vehicle.HandleADCs();
-//        ThrottleMessage throttleMessage(vehicle.throttleVal , vehicle.forwardSwitch, vehicle.reverseSwitch);
-//        canLvChSubsys.startSend(throttleMessage);
-//        canHvChSubsys.startSend(throttleMessage);
-//        SteeringMessage steeringMessage(vehicle.steeringAngle);
-//        canLvChSubsys.startSend(steeringMessage);
-//        BrakeMessage brakeMessage(vehicle.brakeVal);
-//        canLvChSubsys.startSend(brakeMessage);
+        ThrottleMessageLV throttleMessageLV(vehicle.throttleValDash);
+        canLvChSubsys.startSend(throttleMessageLV);
+        ThrottleMessageHV throttleMessageHV(vehicle.throttleVal , vehicle.forwardSwitch, vehicle.reverseSwitch);
+        canHvChSubsys.startSend(throttleMessageHV);
+        SteeringMessage steeringMessage(vehicle.steeringAngle);
+        canLvChSubsys.startSend(steeringMessage);
+        BrakeMessage brakeMessage(vehicle.brakeVal);
+        canLvChSubsys.startSend(brakeMessage);
 
       } else if (e.type() == Event::Type::kTimerTimeout) {
         if (e.timer() == vt_SM_D) {
@@ -363,6 +371,8 @@ int main() {
       }
     }
 
+//    printf3("brakes:%d  T1: %d   T2: %d\n",vehicle.brakeVoltage,vehicle.throttleA,vehicle.throttleB);
+    
     vehicle.FSM();  // update vehicle state
 
     // TODO: use condition var to signal that events are present in the queue

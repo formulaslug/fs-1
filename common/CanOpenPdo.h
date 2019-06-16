@@ -13,8 +13,9 @@
 constexpr uint32_t kFuncIdHeartBeatECU = 0x700;
 // ADC
 constexpr uint32_t kFuncIdBrake = 0x020;
-constexpr uint32_t kFuncIdThrottle = 0x021;
-constexpr uint32_t kFuncIdSteering = 0x022;
+constexpr uint32_t kFuncIdThrottleLV = 0x021;
+constexpr uint32_t kFuncIdThrottleHV = 0x022;
+constexpr uint32_t kFuncIdSteering = 0x023;
 // Digital
 constexpr uint32_t kFuncIdDigital = 0x022;
 
@@ -46,16 +47,28 @@ struct HeartbeatMessage : public CANTxFrame {
 };
 
 // ADC MESSAGES
-struct ThrottleMessage : public CANTxFrame {
-  explicit ThrottleMessage(uint16_t throttleVoltage, uint8_t forwardSwitch, uint8_t reverseSwitch) {
-    IDE = CAN_IDE_EXT;
+struct ThrottleMessageHV : public CANTxFrame {
+  explicit ThrottleMessageHV(uint16_t throttleVoltage, uint8_t forwardSwitch, uint8_t reverseSwitch) {
+    IDE = CAN_IDE_STD;
     RTR = CAN_RTR_DATA;
-    SID = kFuncIdThrottle;
+    SID = kFuncIdThrottleHV;
     DLC = 4;
     data8[0] = throttleVoltage >> 8;  // MSB (32's 3rd byte) (left most byte in DVT)
     data8[1] = throttleVoltage;
     data8[2] = forwardSwitch;
     data8[3] = reverseSwitch; 
+  }
+};
+
+struct ThrottleMessageLV : public CANTxFrame {
+  explicit ThrottleMessageLV(uint16_t throttleVoltage) {
+    IDE = CAN_IDE_STD;
+    RTR = CAN_RTR_DATA;
+    SID = kFuncIdThrottleLV;
+    DLC = 2;
+    data8[0] = throttleVoltage >> 8;  // MSB (32's 3rd byte) (left most byte in DVT)
+    data8[1] = throttleVoltage;
+
   }
 };
 
