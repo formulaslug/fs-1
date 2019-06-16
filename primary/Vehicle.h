@@ -19,7 +19,7 @@ static constexpr uint16_t kBrakeMin = 1520;
 static constexpr uint16_t kBrakeMax = 1585;
 static constexpr uint16_t kBrakeThreshold = 10;  // MAKE THIS REAL
 
-static constexpr uint16_t kThrottleThreshold = 30;
+static constexpr uint16_t kThrottleThreshold = 5000;
 static constexpr uint16_t kThrottleAMin = 1000;
 static constexpr uint16_t kThrottleAMax = 2100;
 static constexpr uint16_t kThrottleBMin = 620;

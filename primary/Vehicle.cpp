@@ -61,8 +61,12 @@ void Vehicle::HandleADCs() {
 		// Dicked
 	} else {
 		throttleVal = 65535 - ((tempA + tempB) / 2);
+		palWritePad(BRAKE_LIGHT_PORT, BRAKE_LIGHT_PIN, PAL_LOW);
 		if (throttleVal > throttleMax) {
-			throttleVal = throttleMax;
+			throttleVal = throttleMax;      //Set to max for drive profile 
+		}else if(throttleVal < kThrottleThreshold){
+		  throttleVal = 0; //Make first 5-10% of pedal travel do nothing 
+		  palWritePad(BRAKE_LIGHT_PORT, BRAKE_LIGHT_PIN, PAL_HIGH);
 		}
 
 	}
@@ -76,9 +80,9 @@ void Vehicle::HandleADCs() {
 			- (100 * (brakeVoltage - kBrakeMin) / (kBrakeMax - kBrakeMin));
 
 	if (brakeVal > kBrakeThreshold) {
-		palWritePad(BRAKE_LIGHT_PORT, BRAKE_LIGHT_PIN, PAL_HIGH); // Brake Light
+//		palWritePad(BRAKE_LIGHT_PORT, BRAKE_LIGHT_PIN, PAL_HIGH); // Brake Light
 	} else {
-		palWritePad(BRAKE_LIGHT_PORT, BRAKE_LIGHT_PIN, PAL_LOW);
+//		palWritePad(BRAKE_LIGHT_PORT, BRAKE_LIGHT_PIN, PAL_LOW);
 	}
 
 	if (steeringIn > kSteeringMax) {
