@@ -1,6 +1,7 @@
 #include "Main.h"
 
 #include "BmsConfig.h"
+#include "CanOpenPdo.h"
 #include "common.h"
 
 #include "ch.hpp"
@@ -8,6 +9,7 @@
 #include "hal.h"
 
 #include "BmsThread.h"
+#include "CANOptions.h"
 #include "LTC6811Bus.h"
 
 using namespace chibios_rt;
@@ -32,6 +34,9 @@ using namespace chibios_rt;
 // * Failed init
 // * Comm fail
 
+static constexpr CANConfig cancfg =
+    CANOptions::config<CANOptions::BaudRate::k500k, false>();
+
 int main() {
   /*
    * System initializations.
@@ -55,6 +60,22 @@ int main() {
   };
   sdStart(&SD2, &serialConf);
   sdWrite(&SD2, (const uint8_t*)"Serial Init\r\n", 13);
+
+  canStart(&BMS_CAN_DRIVER, &cancfg);
+  CANTxFrame txmsg;
+  txmsg.IDE = CAN_IDE_STD;
+  txmsg.RTR = CAN_RTR_DATA;
+  txmsg.SID = kFuncIdCellStartup;
+  txmsg.DLC = 8;
+  uint8_t msg[8] = {'S', 'P', 'I', 'C', 'Y', 'B', 'O', 'I'};
+  for (size_t i = 0; i < 8; i++) {
+    txmsg.data8[i] = msg[i];
+  }
+  if (canTransmit(&BMS_CAN_DRIVER, CAN_ANY_MAILBOX, &txmsg, TIME_MS2I(100)) !=
+      MSG_OK) {
+    sdWrite(&SD2, (const uint8_t*)"Can startup failed\r\n", 20);
+  }
+  chThdSleepMilliseconds(1000);
 
   // Init spi config
   SPIConfig* spiConf = new SPIConfig{false /* Circular buffer */,
@@ -102,4 +123,8 @@ void initIO() {
                  PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST);
   palSetLineMode(LINE_SPI_SSEL,
                  PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_HIGHEST);
+
+  // Set modes for CAN
+  palSetLineMode(LINE_CAN_TX, PAL_MODE_ALTERNATE(9) | PAL_STM32_OSPEED_HIGHEST);
+  palSetLineMode(LINE_CAN_RX, PAL_MODE_ALTERNATE(9));
 }

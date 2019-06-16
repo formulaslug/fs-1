@@ -68,7 +68,7 @@ uint16_t *LTC6811::getVoltages() {
 
   // Voltage = val • 100μV
   uint16_t *voltages = new uint16_t[12];
-  for (int i = 0; i < sizeof(rxbuf); i++) {
+  for (unsigned int i = 0; i < sizeof(rxbuf); i++) {
     // Skip over PEC
     if (i % 8 == 6 || i % 8 == 7) continue;
 
@@ -100,7 +100,7 @@ uint16_t *LTC6811::getGpio() {
 
   uint16_t *voltages = new uint16_t[5];
 
-  for (int i = 0; i < sizeof(rxbuf); i++) {
+  for (unsigned int i = 0; i < sizeof(rxbuf); i++) {
     // Skip over PEC
     if (i % 8 == 6 || i % 8 == 7) continue;
 
@@ -132,7 +132,7 @@ uint16_t *LTC6811::getGpioPin(GpioSelection pin) {
 
   uint16_t *voltages = new uint16_t[5];
 
-  for (int i = 0; i < sizeof(rxbuf); i++) {
+  for (unsigned int i = 0; i < sizeof(rxbuf); i++) {
     // Skip over PEC
     if (i % 8 == 6 || i % 8 == 7) continue;
 
