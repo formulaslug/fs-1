@@ -34,15 +34,23 @@ class BMSThread : public BaseStaticThread<1024> {
   unsigned int m_delay;
   LTC6811Bus* m_bus;
   std::vector<LTC6811> m_chips;
+  bool m_discharging = false;
+
+  void throwBmsFault() {
+    m_discharging = false;
+    palClearLine(LINE_BMS_FLT);
+    palClearLine(LINE_CHARGER_CONTROL);
+  }
 
  protected:
   void main() {
     uint16_t* allVoltages = new uint16_t[BMS_BANK_COUNT * BMS_BANK_CELL_COUNT];
     uint8_t* allTemps = new uint8_t[BMS_BANK_COUNT * BMS_BANK_CELL_COUNT];
+    uint16_t averageVoltage = -1;
     while (!shouldTerminate()) {
       systime_t timeStart = chVTGetSystemTime();
 
-      uint16_t allBanksVoltage = 0;
+      uint32_t allBanksVoltage = 0;
       uint16_t minVoltage = 0xFFFF;
       uint16_t maxVoltage = 0x0000;
       uint8_t minTemp = 0xFF;
@@ -95,23 +103,50 @@ class BMSThread : public BaseStaticThread<1024> {
         for (int j = 0; j < 12; j++) {
           uint16_t voltage = voltages[j] / 10;
 
-          if (voltage != 0 && voltage <= BMS_FAULT_VOLTAGE_THRESHOLD_LOW) {
-            // Set fault line
-            chprintf((BaseSequentialStream*)&SD2,
-                     "***** BMS VOLT FAULT *****\r\nVoltage at %d\r\n\r\n",
-                     voltage);
-            palClearLine(LINE_BMS_FLT);
-            // TODO: Do this better
-          }
+
           int index = BMS_CELL_MAP[j];
-          if (index != -1)
+          if (index != -1) {
             allVoltages[(BMS_BANK_CELL_COUNT * i) + index] = voltage;
 
-          if (voltage < minVoltage && voltage != 0) minVoltage = voltage;
-          if (voltage > maxVoltage) maxVoltage = voltage;
+            if (voltage < minVoltage && voltage != 0) minVoltage = voltage;
+            if (voltage > maxVoltage) maxVoltage = voltage;
 
-          totalVoltage += voltage;
-          chprintf((BaseSequentialStream*)&SD2, "%dmV ", voltage);
+            totalVoltage += voltage;
+            chprintf((BaseSequentialStream*)&SD2, "%dmV ", voltage);
+
+            if (voltage >= BMS_FAULT_VOLTAGE_THRESHOLD_HIGH) {
+              // Set fault line
+              chprintf((BaseSequentialStream*)&SD2,
+                       "***** BMS LOW VOLTAGE FAULT *****\r\nVoltage at %d\r\n\r\n",
+                       voltage);
+              throwBmsFault();
+            }
+            if (voltage <= BMS_FAULT_VOLTAGE_THRESHOLD_LOW) {
+              // Set fault line
+              chprintf((BaseSequentialStream*)&SD2,
+                       "***** BMS HIGH VOLTAGE FAULT *****\r\nVoltage at %d\r\n\r\n",
+                       voltage);
+              throwBmsFault();
+            }
+
+            // Discharge cells if enabled
+            if(m_discharging) {
+              if((voltage > averageVoltage) && (voltage - averageVoltage > BMS_DISCHARGE_THRESHOLD)) {
+                // Discharge
+
+                chprintf((BaseSequentialStream*)&SD2, "DISCHARGE CELL %d: %dmV (%dmV)\r\n", index, voltage, (voltage - averageVoltage));
+
+                // Enable discharging
+                conf.dischargeState.value |= (1 << j);
+              } else {
+                // Disable discharging
+                conf.dischargeState.value &= ~(1 << j);
+              }
+            } else {
+              // Disable discharging
+              conf.dischargeState.value &= ~(1 << j);
+            }
+          }
         }
         chprintf((BaseSequentialStream*)&SD2, "\r\n");
 
@@ -132,20 +167,27 @@ class BMSThread : public BaseStaticThread<1024> {
             // Set fault line
             chprintf((BaseSequentialStream*)&SD2,
                      "***** BMS TEMP FAULT *****\r\nTemp at %d\r\n\r\n", temp);
-            palClearLine(LINE_BMS_FLT);
-            // TODO: Do this better
+            throwBmsFault();
+          }
+          if (temp <= BMS_FAULT_TEMP_THRESHOLD_LOW) {
+            // Set fault line
+            chprintf((BaseSequentialStream*)&SD2,
+                     "***** BMS TEMP FAULT *****\r\nTemp at %d\r\n\r\n", temp);
+            throwBmsFault();
           }
 
           chprintf((BaseSequentialStream*)&SD2, "%dC ", temp);
         }
         chprintf((BaseSequentialStream*)&SD2, "\r\n");
 
-        allBanksVoltage += totalVoltage / 10;
+        allBanksVoltage += totalVoltage;
 
         chprintf((BaseSequentialStream*)&SD2, "\r\n");
       }
 
-      auto txmsg = BMSStatMessage(allBanksVoltage, 0, maxVoltage / 100,
+      averageVoltage = allBanksVoltage / (BMS_BANK_COUNT * BMS_BANK_CELL_COUNT);
+
+      auto txmsg = BMSStatMessage(allBanksVoltage / 10, 0, maxVoltage / 100,
                                   minVoltage / 100, maxTemp, minTemp);
       canTransmit(&BMS_CAN_DRIVER, CAN_ANY_MAILBOX, &txmsg, TIME_MS2I(100));
 

@@ -110,9 +110,11 @@ void initIO() {
   palSetLineMode(LINE_BMS_FLT_LAT, PAL_MODE_INPUT);
   palSetLineMode(LINE_IMD_STATUS, PAL_MODE_INPUT);
   palSetLineMode(LINE_IMD_FLT_LAT, PAL_MODE_INPUT);
+  palSetLineMode(LINE_CHARGER_CONTROL, PAL_MODE_OUTPUT_PUSHPULL);
 
   // Reset BMS fault line
   palSetLine(LINE_BMS_FLT);
+  palClearLine(LINE_BMS_FLT);
 
   // Set modes for SPI
   palSetLineMode(LINE_SPI_MISO,
