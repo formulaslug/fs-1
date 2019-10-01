@@ -100,6 +100,18 @@ struct DigitalMessage : public CANTxFrame {
   }
 };
 
+struct BMSFaultMessage : public CANTxFrame {
+  explicit BMSFaultMessage(uint16_t current) {
+    IDE = CAN_IDE_STD;
+    RTR = CAN_RTR_DATA;
+    SID = kFuncIdFaultStatus;
+    DLC = 8;
+    // TODO: remaining fault data bytes 0-5
+    data8[6] = (current >> 8) & 0xff;
+    data8[7] = current & 0xff;
+  }
+};
+
 struct BMSVoltageMessage : public CANTxFrame {
   explicit BMSVoltageMessage(uint8_t row, uint16_t *voltages) {
     IDE = CAN_IDE_STD;
@@ -126,19 +138,19 @@ struct BMSTempMessage : public CANTxFrame {
 };
 
 struct BMSStatMessage : public CANTxFrame {
-  explicit BMSStatMessage(uint16_t totalVoltage, uint16_t totalCurrent,
-                          uint8_t maxVoltage, uint8_t minVoltage,
+  explicit BMSStatMessage(uint16_t totalVoltage,
+                          uint16_t maxVoltage, uint16_t minVoltage,
                           uint8_t maxTemp, uint8_t minTemp) {
     IDE = CAN_IDE_STD;
     RTR = CAN_RTR_DATA;
     SID = kFuncIdBmsStat;
-    DLC = 7;
+    DLC = 8;
     data8[0] = (totalVoltage >> 8) & 0xff;
     data8[1] = totalVoltage & 0xff;
-    data8[2] = (totalCurrent >> 8) & 0xff;
-    data8[3] = totalCurrent & 0xff;
-    data8[4] = maxVoltage;
-    data8[5] = minVoltage;
+    data8[2] = (maxVoltage >> 8) & 0xff;
+    data8[3] = maxVoltage & 0xff;
+    data8[4] = (minVoltage >> 8) & 0xff;
+    data8[5] = minVoltage & 0xff;
     data8[6] = maxTemp;
     data8[7] = minTemp;
   }

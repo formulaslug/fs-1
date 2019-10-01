@@ -12,6 +12,7 @@
 #include "EnergusTempSensor.h"
 #include "LTC6811.h"
 #include "LTC6811Bus.h"
+#include "Main.h"
 
 using namespace chibios_rt;
 
@@ -187,9 +188,16 @@ class BMSThread : public BaseStaticThread<1024> {
 
       averageVoltage = allBanksVoltage / (BMS_BANK_COUNT * BMS_BANK_CELL_COUNT);
 
-      auto txmsg = BMSStatMessage(allBanksVoltage / 10, 0, maxVoltage / 100,
-                                  minVoltage / 100, maxTemp, minTemp);
-      canTransmit(&BMS_CAN_DRIVER, CAN_ANY_MAILBOX, &txmsg, TIME_MS2I(100));
+
+      {
+	auto txmsg = BMSFaultMessage(gCurrent);
+        canTransmit(&BMS_CAN_DRIVER, CAN_ANY_MAILBOX, &txmsg, TIME_MS2I(100));
+      }
+      {
+        auto txmsg = BMSStatMessage(allBanksVoltage / 10, maxVoltage,
+                                    minVoltage, maxTemp, minTemp);
+        canTransmit(&BMS_CAN_DRIVER, CAN_ANY_MAILBOX, &txmsg, TIME_MS2I(100));
+      }
 
       // Send CAN
       for (size_t i = 0; i < BMS_BANK_COUNT; i++) {
@@ -204,6 +212,8 @@ class BMSThread : public BaseStaticThread<1024> {
 
       // Compute time elapsed since beginning of measurements and sleep for
       // m_delay accounting for elapsed time
+      // TODO: use a hardware timer or a virtual timer or literally anything
+      // else. kek.
       unsigned int timeElapsed = TIME_I2MS(chVTTimeElapsedSinceX(timeStart));
 #ifdef DEBUG
       chprintf((BaseSequentialStream*)&SD2, "BMS Thread time elapsed: %dms\r\n",
