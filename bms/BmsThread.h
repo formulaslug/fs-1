@@ -46,7 +46,7 @@ class BMSThread : public BaseStaticThread<1024> {
  protected:
   void main() {
     uint16_t* allVoltages = new uint16_t[BMS_BANK_COUNT * BMS_BANK_CELL_COUNT];
-    uint8_t* allTemps = new uint8_t[BMS_BANK_COUNT * BMS_BANK_CELL_COUNT];
+    int8_t* allTemps = new int8_t[BMS_BANK_COUNT * BMS_BANK_CELL_COUNT];
     uint16_t averageVoltage = -1;
     while (!shouldTerminate()) {
       systime_t timeStart = chVTGetSystemTime();
@@ -54,8 +54,8 @@ class BMSThread : public BaseStaticThread<1024> {
       uint32_t allBanksVoltage = 0;
       uint16_t minVoltage = 0xFFFF;
       uint16_t maxVoltage = 0x0000;
-      uint8_t minTemp = 0xFF;
-      uint8_t maxTemp = 0x00;
+      int8_t minTemp = INT8_MAX;
+      int8_t maxTemp = INT8_MIN;
 
       for (int i = 0; i < BMS_BANK_COUNT; i++) {
         // Get a reference to the config for toggling gpio
@@ -158,7 +158,7 @@ class BMSThread : public BaseStaticThread<1024> {
 
         chprintf((BaseSequentialStream*)&SD2, "Temperatures: ");
         for (unsigned int j = 0; j < BMS_BANK_TEMP_COUNT; j++) {
-          uint8_t temp = convertTemp(temperatures[j] / 10);
+          int8_t temp = convertTemp(temperatures[j] / 10);
 
           allTemps[(BMS_BANK_TEMP_COUNT * i) + j] = temp;
           if (temp < minTemp) minTemp = temp;

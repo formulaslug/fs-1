@@ -126,12 +126,12 @@ struct BMSVoltageMessage : public CANTxFrame {
 };
 
 struct BMSTempMessage : public CANTxFrame {
-  explicit BMSTempMessage(uint8_t row, uint8_t *temps) {
+  explicit BMSTempMessage(uint8_t row, int8_t *temps) {
     IDE = CAN_IDE_STD;
     RTR = CAN_RTR_DATA;
     SID = kFuncIdCellTempAdc[row];
     DLC = 7;
-    for (int i = 0; i < 7; i++) {
+    for (uint8_t i = 0; i < 7; i++) {
       data8[i] = temps[i];
     }
   }
@@ -139,8 +139,8 @@ struct BMSTempMessage : public CANTxFrame {
 
 struct BMSStatMessage : public CANTxFrame {
   explicit BMSStatMessage(uint16_t totalVoltage,
-                          uint16_t maxVoltage, uint16_t minVoltage,
-                          uint8_t maxTemp, uint8_t minTemp) {
+                          int16_t maxVoltage, int16_t minVoltage,
+                          int8_t maxTemp, int8_t minTemp) {
     IDE = CAN_IDE_STD;
     RTR = CAN_RTR_DATA;
     SID = kFuncIdBmsStat;
