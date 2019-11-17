@@ -172,7 +172,10 @@ void initIO() {
 
   // Reset BMS fault line
   palSetLine(LINE_BMS_FLT);
-  palClearLine(LINE_BMS_FLT);
+  // palClearLine(LINE_BMS_FLT);
+
+  // Enable charging
+  palClearLine(LINE_CHARGER_CONTROL);
 
   // Set modes for SPI
   palSetLineMode(LINE_SPI_MISO,

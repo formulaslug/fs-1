@@ -15,7 +15,7 @@
 //
 // Units: millivolts
 #define BMS_FAULT_VOLTAGE_THRESHOLD_HIGH 4200
-#define BMS_FAULT_VOLTAGE_THRESHOLD_LOW 2500
+#define BMS_FAULT_VOLTAGE_THRESHOLD_LOW 2550
 
 // Threshold when cells will be discharged when discharging is enabled.
 //

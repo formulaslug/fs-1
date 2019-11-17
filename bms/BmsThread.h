@@ -40,7 +40,7 @@ class BMSThread : public BaseStaticThread<1024> {
   void throwBmsFault() {
     m_discharging = false;
     palClearLine(LINE_BMS_FLT);
-    palClearLine(LINE_CHARGER_CONTROL);
+    palSetLine(LINE_CHARGER_CONTROL);
   }
 
  protected:
@@ -48,6 +48,7 @@ class BMSThread : public BaseStaticThread<1024> {
     uint16_t* allVoltages = new uint16_t[BMS_BANK_COUNT * BMS_BANK_CELL_COUNT];
     int8_t* allTemps = new int8_t[BMS_BANK_COUNT * BMS_BANK_CELL_COUNT];
     uint16_t averageVoltage = -1;
+    uint16_t prevMinVoltage = -1;
     while (!shouldTerminate()) {
       systime_t timeStart = chVTGetSystemTime();
 
@@ -81,7 +82,7 @@ class BMSThread : public BaseStaticThread<1024> {
           m_chips[i].updateConfig();
 
           // Wait for config changes to take effect
-          chThdSleepMilliseconds(2);
+          chThdSleepMilliseconds(3);
 
           uint16_t* temps = m_chips[i].getGpioPin(GpioSelection::k4);
           temperatures[j] = temps[3];
@@ -132,10 +133,10 @@ class BMSThread : public BaseStaticThread<1024> {
 
             // Discharge cells if enabled
             if(m_discharging) {
-              if((voltage > averageVoltage) && (voltage - averageVoltage > BMS_DISCHARGE_THRESHOLD)) {
+              if((voltage > prevMinVoltage) && (voltage - prevMinVoltage > BMS_DISCHARGE_THRESHOLD)) {
                 // Discharge
 
-                chprintf((BaseSequentialStream*)&SD2, "DISCHARGE CELL %d: %dmV (%dmV)\r\n", index, voltage, (voltage - averageVoltage));
+                chprintf((BaseSequentialStream*)&SD2, "DISCHARGE CELL %d: %dmV (%dmV)\r\n", index, voltage, (voltage - prevMinVoltage));
 
                 // Enable discharging
                 conf.dischargeState.value |= (1 << j);
@@ -151,9 +152,12 @@ class BMSThread : public BaseStaticThread<1024> {
         }
         chprintf((BaseSequentialStream*)&SD2, "\r\n");
 
-        chprintf((BaseSequentialStream*)&SD2, "Total Voltage: %dmV",
+        chprintf((BaseSequentialStream*)&SD2, "Total Voltage: %dmV\r\n",
                  totalVoltage);
-        chprintf((BaseSequentialStream*)&SD2, "\r\n");
+        chprintf((BaseSequentialStream*)&SD2, "Min Voltage: %dmV\r\n",
+                 minVoltage);
+        chprintf((BaseSequentialStream*)&SD2, "Max Voltage: %dmV\r\n",
+                 maxVoltage);
         delete voltages;
 
         chprintf((BaseSequentialStream*)&SD2, "Temperatures: ");
@@ -167,14 +171,15 @@ class BMSThread : public BaseStaticThread<1024> {
           if (temp >= BMS_FAULT_TEMP_THRESHOLD_HIGH) {
             // Set fault line
             chprintf((BaseSequentialStream*)&SD2,
-                     "***** BMS TEMP FAULT *****\r\nTemp at %d\r\n\r\n", temp);
+                    "***** BMS HIGH TEMP FAULT *****\r\nTemp at %d\r\n\r\n", temp);
             throwBmsFault();
           }
           if (temp <= BMS_FAULT_TEMP_THRESHOLD_LOW) {
             // Set fault line
             chprintf((BaseSequentialStream*)&SD2,
-                     "***** BMS TEMP FAULT *****\r\nTemp at %d\r\n\r\n", temp);
-            throwBmsFault();
+                    "***** BMS LOW TEMP FAULT *****\r\nTemp at %d\r\n\r\n", temp);
+            //throwBmsFault();
+            // Don't throw if low. Low doesn't matter as much
           }
 
           chprintf((BaseSequentialStream*)&SD2, "%dC ", temp);
@@ -187,10 +192,12 @@ class BMSThread : public BaseStaticThread<1024> {
       }
 
       averageVoltage = allBanksVoltage / (BMS_BANK_COUNT * BMS_BANK_CELL_COUNT);
+      prevMinVoltage = minVoltage;
 
 
       {
 	auto txmsg = BMSFaultMessage(gCurrent);
+        chprintf((BaseSequentialStream*)&SD2, "Current: %d\r\n", gCurrent);
         canTransmit(&BMS_CAN_DRIVER, CAN_ANY_MAILBOX, &txmsg, TIME_MS2I(100));
       }
       {
