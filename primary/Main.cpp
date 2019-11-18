@@ -114,7 +114,7 @@ int main() {
   CanBus canBusLv(&CAND1, CanBusBaudRate::k500k, false);
   chibios_rt::Mutex canBusLvMut;
 
-  CanBus canBusHv(&CAND2, CanBusBaudRate::k1M, true);
+  CanBus canBusHv(&CAND2, CanBusBaudRate::k500k, false);
   chibios_rt::Mutex canBusHvMut;
 
   palSetPad(STARTUP_LED_PORT, STARTUP_LED_PIN);
@@ -179,12 +179,12 @@ int main() {
   }
   palWritePad(BRAKE_LIGHT_PORT, BRAKE_LIGHT_PIN, PAL_HIGH);  // Brake Light
 
-  uint16_t test = 420;
-  HeartbeatMessage heartbeat(test);
-
   while (1) {
-    // canHvChSubsys.startSend(msg);
+    uint16_t test = vehicle.driveProfile;
+    HeartbeatMessage heartbeat(test);
+
     canLvChSubsys.startSend(heartbeat);
+    canHvChSubsys.startSend(heartbeat);
 
     while (fsmEventQueue.size() > 0) {
       Event e = fsmEventQueue.pop();
@@ -319,7 +319,7 @@ int main() {
 
             break;
           default:
-            //printf3("UnknownCAN\n");
+            printf3("Unknown CAN ID 0x%x: 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x\n", canEid, canData[0], canData[1], canData[2], canData[3], canData[4], canData[5], canData[6], canData[7]);
             break;
         }
       } else if (e.type() == Event::Type::kAdcConversion) {
@@ -327,13 +327,13 @@ int main() {
         uint16_t adcIn = e.adcValue();
         if (adcPin == Gpio::kA1) {  // Brakes
           vehicle.brakeVoltage = adcIn;
-          // printf3("Brakes:%d\n", vehicle.brakeVoltage);
+          //printf3("Brakes:%d\n", vehicle.brakeVoltage);
         } else if (adcPin == Gpio::kA2) {  // Throttle A
           vehicle.throttleA = adcIn;
-          // printf3("ThrottleA:%d\n", vehicle.throttleA);
+          //printf3("ThrottleA:%d\n", vehicle.throttleA);
         } else if (adcPin == Gpio::kA3) {  // Throttle B
           vehicle.throttleB = adcIn;
-          // printf3("ThrottleB:%d\n", vehicle.throttleB);
+          //printf3("ThrottleB:%d\n", vehicle.throttleB);
         } else if (adcPin == Gpio::kA6) {  // Steering
           vehicle.steeringIn = adcIn;
           // printf3("Steering:%d\n", adcIn);
@@ -341,7 +341,7 @@ int main() {
         vehicle.HandleADCs();
         ThrottleMessageLV throttleMessageLV(vehicle.throttleValDash);
         canLvChSubsys.startSend(throttleMessageLV);
-        ThrottleMessageHV throttleMessageHV(vehicle.throttleVal , vehicle.forwardSwitch, vehicle.reverseSwitch);
+        ThrottleMessageHV throttleMessageHV(vehicle.throttleVal, vehicle.forwardSwitch, vehicle.reverseSwitch);
         canHvChSubsys.startSend(throttleMessageHV);
         SteeringMessage steeringMessage(vehicle.steeringAngle);
         canLvChSubsys.startSend(steeringMessage);
@@ -386,6 +386,6 @@ int main() {
 
     // TODO: use condition var to signal that events are present in the queue
     // NOTE: must be fast enough to deplete event queue quickly enough
-    chThdSleepMilliseconds(1);
+    chThdSleepMilliseconds(10);
   }
 }

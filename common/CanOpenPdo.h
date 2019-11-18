@@ -51,8 +51,8 @@ struct ThrottleMessageHV : public CANTxFrame {
     RTR = CAN_RTR_DATA;
     SID = kFuncIdThrottleHV;
     DLC = 4;
-    data8[0] = throttleVoltage >> 8;  // MSB (32's 3rd byte) (left most byte in DVT)
-    data8[1] = throttleVoltage;
+    data8[0] = throttleVoltage;  // LSB (32's 1st byte) (left most byte in DVT)
+    data8[1] = throttleVoltage >> 8;
     data8[2] = forwardSwitch;
     data8[3] = reverseSwitch; 
   }

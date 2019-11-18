@@ -29,47 +29,43 @@ void Vehicle::profileChange(uint8_t prof) {
 			printf3("LUDICROUS\n");
 			break;
 		default:
+			printf3("BAD PROF CHANGE\n");
 			break;
 	}
 }
 
 void Vehicle::HandleADCs() {
 	int16_t tempA, tempB;
+
+	// Clamp throttleA between defined min/max
 	if (throttleA > kThrottleAMax) {
 		throttleA = kThrottleAMax;
 	} else if (throttleA < kThrottleAMin) {
 		throttleA = kThrottleAMin;
 	}
+
+	// Clamp throttleB between defined min/max
 	if (throttleB > kThrottleBMax) {
 		throttleB = kThrottleBMax;
 	} else if (throttleB < kThrottleBMin) {
 		throttleB = kThrottleBMin;
 	}
 
-	tempA = 65535 * (throttleA - kThrottleAMin)
+	//printf3("TEMP %d %d\n", throttleA, throttleB);
+	tempA = kThrottleOutputMax * (throttleA - kThrottleAMin)
 			/ (kThrottleAMax - kThrottleAMin);
-	tempB = 65535 * (throttleB - kThrottleBMin)
-			/ (kThrottleBMax - kThrottleBMin);
+	tempB = tempA;
+	        /*kThrottleOutputMax * (throttleB - kThrottleBMin)
+			/ (kThrottleBMax - kThrottleBMin);*/
 	
-	throttleValDash = (65535 - ((tempA + tempB) / 2))/256;
-	if (throttleValDash > 255) {
-	      throttleVal = 255;
-	    }
-	
-	if (tempA > tempB + (65535 * .1) || tempA < tempB - (65535 * .1)) {
+	if (tempA > tempB + (kThrottleOutputMax * .1) || tempA < tempB - (kThrottleOutputMax * .1)) {
 		throttleVal = 0;
 		// Dicked
 	} else {
-		throttleVal = 65535 - ((tempA + tempB) / 2);
-		palWritePad(BRAKE_LIGHT_PORT, BRAKE_LIGHT_PIN, PAL_LOW);
-		if (throttleVal > throttleMax) {
-			throttleVal = throttleMax;      //Set to max for drive profile 
-		}else if(throttleVal < kThrottleThreshold){
-		  throttleVal = 0; //Make first 5-10% of pedal travel do nothing 
-		  palWritePad(BRAKE_LIGHT_PORT, BRAKE_LIGHT_PIN, PAL_HIGH);
-		}
-
+		throttleVal = (throttleMax * (kThrottleOutputMax- ((tempA + tempB) / 2))) - kThrottleThreshold;
 	}
+
+	throttleValDash = throttleVal >> 8;
 
 	if (brakeVoltage > kBrakeMax) {
 		brakeVoltage = kBrakeMax;
@@ -80,9 +76,9 @@ void Vehicle::HandleADCs() {
 			- (100 * (brakeVoltage - kBrakeMin) / (kBrakeMax - kBrakeMin));
 
 	if (brakeVal > kBrakeThreshold) {
-//		palWritePad(BRAKE_LIGHT_PORT, BRAKE_LIGHT_PIN, PAL_HIGH); // Brake Light
+		palWritePad(BRAKE_LIGHT_PORT, BRAKE_LIGHT_PIN, PAL_HIGH); // Brake Light
 	} else {
-//		palWritePad(BRAKE_LIGHT_PORT, BRAKE_LIGHT_PIN, PAL_LOW);
+		palWritePad(BRAKE_LIGHT_PORT, BRAKE_LIGHT_PIN, PAL_LOW);
 	}
 
 	if (steeringIn > kSteeringMax) {
@@ -94,12 +90,6 @@ void Vehicle::HandleADCs() {
 	steeringAngle = (100 * (steeringIn - kSteeringMin)
 			/ (kSteeringMax - kSteeringMin));
 	//	arctan(total displacement (cm) /7 (cm)) = steering angle
-	
-	
-	
-	//TODO:lick my balls
-	//throttleVal = 0 ; //THIS BREAKS EVERYTHING 
-	
 }
 
 void Vehicle::FaultCheck() { // checks if any fault states have tripped and puts

@@ -23,7 +23,7 @@ void CanChSubsys::runTxThread() {
       m_canBus.processTxMessages();
     }
     // throttle back thread runloop to prevent overconsumption of resources
-    chThdSleepMilliseconds(100);
+    chThdSleepMilliseconds(2);
   }
 }
 
@@ -61,7 +61,7 @@ void CanChSubsys::runRxThread() {
       // push event
       m_eventQueue.push(e);
     }
-    chThdSleepMilliseconds(1);
+    chThdSleepMilliseconds(2);
   }
 
   chEvtUnregister(&(m_canBus.m_canp->rxfull_event), &el);

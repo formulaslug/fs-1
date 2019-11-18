@@ -2,6 +2,9 @@
 
 #include "CanBus.h"
 
+#include "fsprintf.h"
+static auto printf3 = SDPrinter<&SD3>();
+
 /* baudrate = 36MHz / ((1 + BRP) * (3 + TS1 + TS2))
  * See STM32F103xx reference manual, 24.7.7 for info on CAN_BTR register.
  *
@@ -22,10 +25,10 @@ constexpr CANConfig MakeConfig(CanBusBaudRate baud, bool loopback) {
   const uint32_t can_clk = STM32_PCLK1;
   const uint32_t b = static_cast<uint32_t>(baud); //42 MHz on F405
   
-  uint32_t btr = CAN_BTR_SJW(1) | // standard jump width
-                  CAN_BTR_TS1(10) | // time segment 1 = 12+1 = 13
-                  CAN_BTR_TS2(1); //| // time segment 2 = 1+1 = 2
-                  //CAN_BTR_BRP(can_clk / b / 8 - 1); // Baud rate prescaler
+  uint32_t btr = CAN_BTR_SJW(0) | // standard jump width
+                 CAN_BTR_TS1(10) | // time segment 1 = 12+1 = 13
+                 CAN_BTR_TS2(1); //| // time segment 2 = 1+1 = 2
+                 //CAN_BTR_BRP(can_clk / b / 8 - 1); // Baud rate prescaler
 
   if (loopback) {
     btr |= CAN_BTR_LBKM;
@@ -52,13 +55,14 @@ constexpr CANConfig MakeConfig(CanBusBaudRate baud, bool loopback) {
       break;
   }
 
-  return {CAN_MCR_ABOM | CAN_MCR_AWUM | CAN_MCR_TXFP, btr};
+  return {CAN_MCR_ABOM | CAN_MCR_AWUM | CAN_MCR_TXFP | CAN_MCR_NART, btr};
 }
 
 CanBus::CanBus(CANDriver* canp, CanBusBaudRate baud, bool loopback) {
   m_canp = canp;
 
   CANConfig config = MakeConfig(baud, loopback);
+  canObjectInit(m_canp);
   canStart(m_canp, &config);
 
   // config the pins
@@ -91,7 +95,8 @@ CanBus::~CanBus() { canStop(m_canp); }
  *       success and a solid LOW indicates continuous failure.
  */
 bool CanBus::send(const CANTxFrame& msg) {
-  if (canTransmit(m_canp, CAN_ANY_MAILBOX, &msg, TIME_MS2I(100)) == MSG_OK) {
+  msg_t ret = canTransmit(m_canp, CAN_ANY_MAILBOX, &msg, TIME_MS2I(100));
+  if (ret == MSG_OK) {
     // success: HIGH LED
     if (m_canp == &CAND1) {
       palWritePad(CAN1_STATUS_LED_PORT, CAN1_STATUS_LED_PIN, PAL_HIGH);
@@ -116,7 +121,7 @@ bool CanBus::send(const CANTxFrame& msg) {
 }
 
 bool CanBus::recv(CANRxFrame& msg) {
-  return canReceive(m_canp, CAN_ANY_MAILBOX, &msg, TIME_IMMEDIATE) == MSG_OK;
+  return canReceive(m_canp, CAN_ANY_MAILBOX, &msg, TIME_IMMEDIATE);
 }
 
 // void CanBus::printTxMessage(const CANTxFrame& msg) const {
