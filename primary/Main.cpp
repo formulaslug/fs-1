@@ -339,7 +339,7 @@ int main() {
           // printf3("Steering:%d\n", adcIn);
         }
         vehicle.HandleADCs();
-        ThrottleMessageLV throttleMessageLV(vehicle.throttleValDash);
+        ThrottleMessageLV throttleMessageLV(vehicle.throttleValDash, vehicle.driveProfile);
         canLvChSubsys.startSend(throttleMessageLV);
         ThrottleMessageHV throttleMessageHV(vehicle.throttleVal, vehicle.forwardSwitch, vehicle.reverseSwitch);
         canHvChSubsys.startSend(throttleMessageHV);

@@ -26,10 +26,10 @@ static constexpr uint16_t kThrottleBMin = 620;
 static constexpr uint16_t kThrottleBMax = 1380;
 
 static constexpr uint16_t kThrottleOutputMax = 32767;
-static constexpr double kThrottleSafeMax .1
-static constexpr double kThrottleEnduranceMax .3
-static constexpr double kThrottleAutoXMax .5
-static constexpr double kThrottleLudicrousMax .7
+static constexpr double kThrottleSafeMax = .1;
+static constexpr double kThrottleEnduranceMax = .3;
+static constexpr double kThrottleAutoXMax = .5;
+static constexpr double kThrottleLudicrousMax = .7;
 
 static constexpr uint16_t kSteeringMin = 1150;
 

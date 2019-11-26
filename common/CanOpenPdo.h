@@ -59,14 +59,14 @@ struct ThrottleMessageHV : public CANTxFrame {
 };
 
 struct ThrottleMessageLV : public CANTxFrame {
-  explicit ThrottleMessageLV(uint16_t throttleVoltage) {
+  explicit ThrottleMessageLV(uint16_t throttleVoltage, uint8_t driveMode) {
     IDE = CAN_IDE_STD;
     RTR = CAN_RTR_DATA;
     SID = kFuncIdThrottleLV;
-    DLC = 2;
+    DLC = 5;
     data8[0] = throttleVoltage >> 8;  // MSB (32's 3rd byte) (left most byte in DVT)
     data8[1] = throttleVoltage;
-
+    data8[4] = driveMode;
   }
 };
 
