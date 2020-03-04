@@ -1,0 +1,10 @@
+
+Purpose
+-------
+This module contains shared code for all STM boards. Some things may currently
+work only on STMF303* MCUs but it is intended that they can be easily
+parameterized to work on all ChibiOS-supported boards.
+
+Contents
+--------
+fsCAN.h - Contains CAN constants (WIP)

@@ -16,7 +16,7 @@
 
 /*
  *_____          ____  
- |  __ \   /\   / _  \
+ |  __ \   /\   / __ \ 
  | |  | | /  \ | |  | |
  | |  | |/ /\ \| |  | |
  | |__| / ____ \ |__| |
@@ -25,12 +25,26 @@
  
  */
 
+// chibiOS includes
 #include "ch.h"
 #include "hal.h"
 
-#include "CANOptions.h"
-#include "fsprintf.h"
+// these are unnecessary for building
+// commented out because the project would not compile in this directory
+#include "rt_test_root.h"
+#include "oslib_test_root.h"
 
+// voodoo includes
+#include "DaqConfig.h"
+#include "fscore/fsCAN.h"
+#include "fscore/fsprintf.h"
+
+// configures CAN listener settings
+// according to vehicle CAN configuration
+static constexpr CANConfig cancfg = CANOptions::config<
+  		CANOptions::BaudRate::k500k, false>();
+
+// printf() overloading???
 static mutex_t print_mutex;
 static auto printf = SDPrinter<&SD2>();
 //#define CH_CFG_ST_RESOLUTION                64
@@ -38,39 +52,77 @@ static auto printf = SDPrinter<&SD2>();
 //#define CH_CFG_INTERVALS_SIZE               16
 
 
+// new buffer code
+#include "CircularBuffer.h"
+#include "common.h"
+auto messages = new CircularBuffer<CANRxFrame>(10);
+
+// creates thread to listen to CAN messages
 static THD_WORKING_AREA(can_rx_wa, 256);
 static THD_FUNCTION(can_rx, p) {
-	event_listener_t el;
-	CANRxFrame rxmsg;
-	(void)p;
+	event_listener_t el; // stores events?
+	CANRxFrame rxmsg;    // contains CAN message data
+	(void)p;             // wtf is this for
 
 	chRegSetThreadName("receiver");
-	chEvtRegister(&CAND1.rxfull_event, &el, 0);
+	chEvtRegister(&CAND1.rxfull_event, &el, 0); // listens for CAN events, pases them to event listener
+                                              // is this even necessary?
 	while (true) {
-		if (chEvtWaitAnyTimeout(ALL_EVENTS, TIME_MS2I(100)) == 0) {
-			//palClearLine(LINE_LED_GREEN);
-			continue;
-		}
+		// if (chEvtWaitAnyTimeout(ALL_EVENTS, TIME_MS2I(100)) == 0) {  // for blinking lights?
+		// 	//palClearLine(LINE_LED_GREEN);
+		// 	continue;
+		// }
 		while (canReceive(&CAND1, CAN_ANY_MAILBOX, &rxmsg, TIME_IMMEDIATE) == MSG_OK) {
 			/* Process message.*/
             uint32_t id;
 			if (rxmsg.IDE == CAN_IDE_EXT) {
                 id = rxmsg.EID;
+//				printf("T%d I%X D%d\n", chVTGetSystemTimeX() ,rxmsg.EID,
+//						rxmsg.data16[0]);
+//				printf("T%d I%X D%d\n", rxmsg.TIME ,rxmsg.EID,
+//										rxmsg.data16[0]);
 			}
 			else {
                 id = rxmsg.SID;
 			}
 
-            printf("%X %02X%02X%02X%02X%02X%02X%02X%02X %d\n", id,
-                    rxmsg.data8[0], rxmsg.data8[1], rxmsg.data8[2], rxmsg.data8[3],
-                    rxmsg.data8[4], rxmsg.data8[5], rxmsg.data8[6], rxmsg.data8[7],
-                    chVTGetSystemTimeX());
+//				printf("T%d I%X D%d\n", chVTGetSystemTimeX() ,rxmsg.EID,
+      if (messages->Capacity() == messages->Size()) {
+        // buffer is at capacity
+        printf("buffer is full, ya printf function sucks dick\n");
+      } else {
+        messages->PushBack(rxmsg);
+      }
 
 			palToggleLine(LINE_LED_GREEN);
 		}
 	}
 	chEvtUnregister(&CAND1.rxfull_event, &el);
 }
+
+
+static THD_WORKING_AREA(serial_out_wa, 256);
+static THD_FUNCTION(serial_out, p) {
+  (void)p;
+
+  if (messages->Capacity() > 0) {
+    CANRxFrame rxmsg = messages->PopFront();
+
+    uint32_t id;
+    if (rxmsg.IDE == CAN_IDE_EXT) {
+      id = rxmsg.EID;
+    } else {
+      id = rxmsg.SID;
+    }
+
+    // prints can message to serial
+    // this is too slow, replace with writing whole message to sim card somehow
+    printf("ID=%X DATA=%02X%02X%02X%02X%02X%02X%02X%02X\n", id,
+            rxmsg.data8[0], rxmsg.data8[1], rxmsg.data8[2], rxmsg.data8[3],
+            rxmsg.data8[4], rxmsg.data8[5], rxmsg.data8[6], rxmsg.data8[7]);
+  }
+}
+
 
 /*
  * Application entry point.
@@ -94,7 +146,6 @@ int main(void) {
 	/*
 	 * Activates the CAN driver 1.
 	 */
-    static constexpr CANConfig cancfg = CANOptions::config<CANOptions::BaudRate::k500k, false>();
 	palSetLineMode(LINE_ARD_D10, PAL_MODE_ALTERNATE(9));  // CAN RX
 	palSetLineMode(LINE_ARD_D2, PAL_MODE_ALTERNATE(9));  // CAN TX
 	canStart(&CAND1, &cancfg);
@@ -104,7 +155,10 @@ int main(void) {
 	 */
 	chThdCreateStatic(can_rx_wa, sizeof(can_rx_wa), NORMALPRIO + 7, can_rx,
 			NULL);
-
+	//chThdCreateStatic(can_tx_wa, sizeof(can_tx_wa), NORMALPRIO + 7, can_tx,
+	//		NULL);
+	chThdCreateStatic(serial_out_wa, sizeof(serial_out_wa), NORMALPRIO + 7, serial_out,
+			NULL);
 	/*
 	 * Normal main() thread activity, in this demo it does nothing except
 	 * sleeping in a loop and check the button state.

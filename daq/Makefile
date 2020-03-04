@@ -90,10 +90,11 @@ MCU  = cortex-m4
 
 # Imported source files and paths.
 CHIBIOS  := ../ChibiOS
+COMMONDIR := ../common
 CONFDIR  := ./cfg
 BUILDDIR := ./build
 DEPDIR   := ./.dep
-COMMONINC := ../common
+
 
 # Licensing files.
 include $(CHIBIOS)/os/license/license.mk
@@ -101,7 +102,6 @@ include $(CHIBIOS)/os/license/license.mk
 include $(CHIBIOS)/os/common/startup/ARMCMx/compilers/GCC/mk/startup_stm32f3xx.mk
 # HAL-OSAL files (optional).
 include $(CHIBIOS)/os/hal/hal.mk
-include $(CHIBIOS)/os/hal/lib/streams/streams.mk
 include $(CHIBIOS)/os/hal/ports/STM32/STM32F3xx/platform.mk
 include $(CHIBIOS)/os/hal/boards/ST_NUCLEO32_F303K8/board.mk
 include $(CHIBIOS)/os/hal/osal/rt/osal.mk
@@ -110,6 +110,8 @@ include $(CHIBIOS)/os/rt/rt.mk
 include $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC/mk/port_v7m.mk
 # Auto-build files in ./source recursively.
 include $(CHIBIOS)/tools/mk/autobuild.mk
+include $(CHIBIOS)/os/various/cpp_wrappers/chcpp.mk
+include $(CHIBIOS)/os/hal/lib/streams/streams.mk
 # Other files (optional).
 include $(CHIBIOS)/test/lib/test.mk
 include $(CHIBIOS)/test/rt/rt_test.mk
@@ -126,7 +128,9 @@ CSRC = $(ALLCSRC) \
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
 CPPSRC = $(ALLCPPSRC) \
-	 main.cpp
+         $(wildcard *.cpp) \
+         $(wildcard *.hpp) \
+	 $(wildcard $(COMMONDIR)/*.cpp)
 
 # List ASM source files here.
 ASMSRC = $(ALLASMSRC)
@@ -135,7 +139,7 @@ ASMSRC = $(ALLASMSRC)
 ASMXSRC = $(ALLXASMSRC)
 
 # Inclusion directories.
-INCDIR = $(CONFDIR) $(ALLINC) $(COMMONINC) $(TESTINC)
+INCDIR = $(CONFDIR) $(ALLINC) $(COMMONDIR) $(TESTINC)
 
 # Define C warning options here.
 CWARN = -Wall -Wextra -Wundef -Wstrict-prototypes
