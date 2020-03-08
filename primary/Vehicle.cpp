@@ -72,8 +72,7 @@ void Vehicle::HandleADCs() {
 	} else if (brakeVoltage < kBrakeMin) {
 		brakeVoltage = kBrakeMin;
 	}
-	brakeVal = 100
-			- (100 * (brakeVoltage - kBrakeMin) / (kBrakeMax - kBrakeMin));
+	brakeVal = 100 * (brakeVoltage - kBrakeMin) / (kBrakeMax - kBrakeMin);
 
 	if (brakeVal > kBrakeThreshold) {
 		palWritePad(BRAKE_LIGHT_PORT, BRAKE_LIGHT_PIN, PAL_HIGH); // Brake Light

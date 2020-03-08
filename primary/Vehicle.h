@@ -15,21 +15,21 @@ constexpr uint8_t kNumButtons = 2;
 static constexpr uint8_t kOn = 1;
 static constexpr uint8_t kOff = 0;
 
-static constexpr uint16_t kBrakeMin = 1520;
+static constexpr uint16_t kBrakeMin = 375;
 static constexpr uint16_t kBrakeMax = 1585;
-static constexpr uint16_t kBrakeThreshold = 10;  // MAKE THIS REAL
+static constexpr uint16_t kBrakeThreshold = 10;
 
 static constexpr uint16_t kThrottleThreshold = 5000;
 static constexpr uint16_t kThrottleAMin = 950;
 static constexpr uint16_t kThrottleAMax = 1900;
-static constexpr uint16_t kThrottleBMin = 620;
+static constexpr uint16_t kThrottleBMin = 776;
 static constexpr uint16_t kThrottleBMax = 1380;
 
 static constexpr uint16_t kThrottleOutputMax = 32767;
-static constexpr double kThrottleSafeMax = .1;
-static constexpr double kThrottleEnduranceMax = .3;
-static constexpr double kThrottleAutoXMax = .5;
-static constexpr double kThrottleLudicrousMax = .7;
+static constexpr double kThrottleSafeMax = .3;
+static constexpr double kThrottleEnduranceMax = .5;
+static constexpr double kThrottleAutoXMax = .7;
+static constexpr double kThrottleLudicrousMax = 1;
 
 static constexpr uint16_t kSteeringMin = 1150;
 
