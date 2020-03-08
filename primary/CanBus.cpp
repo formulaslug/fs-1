@@ -121,7 +121,7 @@ bool CanBus::send(const CANTxFrame& msg) {
 }
 
 bool CanBus::recv(CANRxFrame& msg) {
-  return canReceive(m_canp, CAN_ANY_MAILBOX, &msg, TIME_IMMEDIATE);
+  return canReceive(m_canp, CAN_ANY_MAILBOX, &msg, TIME_IMMEDIATE) == MSG_OK;
 }
 
 // void CanBus::printTxMessage(const CANTxFrame& msg) const {

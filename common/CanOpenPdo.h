@@ -53,8 +53,7 @@ struct ThrottleMessageHV : public CANTxFrame {
     DLC = 4;
     data8[0] = throttleVoltage;  // LSB (32's 1st byte) (left most byte in DVT)
     data8[1] = throttleVoltage >> 8;
-    data8[2] = forwardSwitch;
-    data8[3] = reverseSwitch; 
+    data8[2] = reverseSwitch << 1 | forwardSwitch;
   }
 };
 
