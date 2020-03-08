@@ -12,9 +12,10 @@ class Event {
  public:
   // Event types
   enum Type { kNone, kCanRx, kTimerTimeout, kAdcConversion, kDigInTransition };
+  enum CanSource { kHv, kLv };
 
   Event(Type t, Gpio adcPin, uint32_t adcValue);
-  Event(Type t, uint32_t canEid, std::array<uint16_t, 8> canFrame);
+  Event(Type t, uint32_t canEid, CanSource canSource, std::array<uint16_t, 8> canFrame);
   Event(Type t, uint8_t timerNum);
   Event(Type t, DigitalInput pin, bool currentState);
   Event();
@@ -25,6 +26,7 @@ class Event {
   Gpio adcPin();
   uint32_t adcValue();
   uint32_t canEid();
+  CanSource canSource();
   std::array<uint16_t, 8> canFrame();
   DigitalInput digInPin();
   bool digInState();

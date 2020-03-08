@@ -57,7 +57,10 @@ void CanChSubsys::runRxThread() {
         frame[i] = msg.data8[i];
       }
       // write COBID to event params
-      Event e = Event(Event::Type::kCanRx, msg.EID, frame);
+      Event e = Event(Event::Type::kCanRx, msg.EID,
+          m_canBus.m_canp == &CAND1 ? Event::CanSource::kLv
+                                    : Event::CanSource::kHv,
+          frame);
       // push event
       m_eventQueue.push(e);
     }

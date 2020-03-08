@@ -249,6 +249,19 @@ int main() {
       } else if (e.type() == Event::Type::kCanRx) {
         std::array < uint16_t, 8 > canData = e.canFrame();
         uint32_t canEid = e.canEid();
+
+        if(e.canSource() == Event::CanSource::kHv) {
+          CANTxFrame msg;
+          msg.EID = canEid;
+          msg.DLC = 8;
+          msg.IDE = CAN_IDE_STD;
+          msg.RTR = CAN_RTR_DATA;
+          for(int i = 0; i < 8; i++) {
+            msg.data8[i] = canData[i];
+          }
+          canLvChSubsys.startSend(msg);
+        }
+        
         switch (canEid) {
           case kFuncIdHeartBeatECU:  // HEARTBEAT
             //do nothing 
