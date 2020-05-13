@@ -133,6 +133,8 @@ class BMSThread : public BaseStaticThread<1024> {
 
             // Discharge cells if enabled
             if(m_discharging) {
+              chprintf((BaseSequentialStream*)&SD2, "DISCHARGE CELL %d: %dmV (%dmV)\r\n", index, voltage, (voltage - prevMinVoltage));
+
               // Enable discharging
               conf.dischargeState.value |= (1 << j);
             } else {
